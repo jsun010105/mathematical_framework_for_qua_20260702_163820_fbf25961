@@ -1,0 +1,71 @@
+\documentclass{amsart}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[hidelinks]{hyperref}
+\usepackage[noabbrev,capitalize]{cleveref}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\numberwithin{equation}{section}
+
+% Import command files (if they exist)
+\InputIfFileExists{commands/math}{}{}
+\InputIfFileExists{commands/general}{}{}
+\InputIfFileExists{commands/macros}{}{}
+
+% Project-specific shorthands
+\newcommand{\RC}{\mathrm{RC}}
+\newcommand{\clip}{\mathrm{clip}}
+\renewcommand{\eth}{\mathrm{eth}}
+\newcommand{\acc}{\mathrm{acc}}
+\newcommand{\rob}{\mathrm{rob}}
+\newcommand{\nat}{\mathrm{nat}}
+
+\title[Quantifying Ethical Robustness in Adversarial ML Systems]{A Composite Coefficient for Quantifying Ethical Robustness in Adversarial Machine-Learning Systems}
+
+\author{NeuriCo}
+\email{chicagohailab@gmail.com}
+
+\subjclass[2020]{Primary 68T05, 68T27; Secondary 90C40, 62P99}
+
+\date{July 2, 2026}
+
+\keywords{Adversarial robustness, certified robustness, alignment, constrained
+Markov decision processes, composite metrics, robustness--accuracy trade-off}
+
+\begin{document}
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\maketitle
+
+\input{sections/introduction}
+\input{sections/preliminaries}
+\input{sections/main_results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\bibliographystyle{amsplain}
+\bibliography{references}
+
+\end{document}

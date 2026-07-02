@@ -1,0 +1,31 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We converted an informal empirical hypothesis---that ethically constrained models
+are more robust under adversarial prompts, by a margin of at least $0.15$, captured
+by a composite metric---into a rigorous mathematical framework. The composite
+ethical-robustness coefficient $\RC_\lambda$ is well-posed (\cref{thm:wellposed}),
+decomposes exactly in the TRADES style (\cref{thm:decomp}), and---our central
+result---satisfies the separation
+$\Delta\ge(1-\lambda)\big[(1-d)-\bar a/a_{\min}\big]-\lambda\delta_C$ under a
+training-time CMDP ethical constraint, which meets the target $\Delta\ge0.15$ on an
+explicit, checkable parameter region (\cref{thm:main} and \cref{cor:015}). The
+composite is necessary: every accuracy-only metric is provably blind to alignment
+collapse, whereas $\RC_\lambda$ separates a safe from a collapsed model by
+$1-\lambda$ (\cref{thm:necessity}). Finally, $\RC_\lambda$ admits attack-independent
+Lipschitz and randomized-smoothing certified lower bounds (\cref{thm:certified}),
+and the admissible-weight region for any target separation is characterized in
+closed form (\cref{thm:lambda}). Every result is machine-verified.
+
+The key takeaway is that the observed robustness gain of ethically constrained
+models is not merely empirical: under explicit and testable hypotheses it is a
+theorem, with a lower bound in closed form, and it is a gain that a single accuracy
+number cannot see.
+
+Future work has four natural directions, each isolated above: certified lower bounds
+for discrete token-substitution perturbations; a characterization of the ethical
+constraint strength that maximizes $\E[\RC_\lambda]$; replacement of the assumed
+correctness cost $\delta_C$ by a provable trade-off bound, yielding an unconditional
+admissible-weight region; and a vector-valued composite with per-dimension
+certificates. Each would tighten the framework toward an end-to-end, empirically
+instantiated guarantee.

@@ -1,0 +1,69 @@
+========================================================================
+NUMERICAL VERIFICATION OF RC_lambda THEOREMS  (seed=42)
+========================================================================
+
+[V1] Theorem 1: RC_lambda in [0,1] and non-increasing in eps.
+      over 11 lambda x 20000 inputs:  min=0.000013  max=0.999994
+      E[RC] vs eps-index (should be non-increasing): 1.000, 0.588, 0.450, 0.381, 0.339, 0.312, 0.293, 0.278, 0.267
+      eps=0 value = 1.000000 (Theorem 1c predicts 1.0): OK
+      monotonicity: PASS ; eps=0 limit: PASS
+
+[V2] Theorem 2: e_rob^S = e_nat^S + b^S  (exact, both scores).
+      [C] e_nat=0.249986  b=0.375142  e_nat+b=0.625128  e_rob=0.625128  |resid|=1.11e-16
+      [A] e_nat=0.248962  b=0.373350  e_nat+b=0.622312  e_rob=0.622312  |resid|=1.11e-16
+      decomposition identity holds to machine precision: PASS
+
+[V3] Theorem 5: RC >= 1 - eps*(lam L_C/c_min + (1-lam) L_A/a_min).
+      eps    E[RC]    lower-bound   holds
+      0.000  1.0000   1.0000      True
+      0.075  0.9594   0.9559      True
+      0.150  0.9187   0.9118      True
+      0.225  0.8781   0.8676      True
+      0.300  0.8374   0.8235      True
+      Lipschitz certificate holds at all eps: PASS
+
+[V4] Theorem 3: Delta = E[RC_eth]-E[RC_acc] >= 0.15 in modeled regime.
+      lam    E[RC_acc]  E[RC_eth]   Delta
+      0.00   0.3000     0.8236     +0.5236
+      0.10   0.3525     0.8278     +0.4753
+      0.20   0.4049     0.8319     +0.4270
+      0.30   0.4574     0.8361     +0.3787
+      0.40   0.5099     0.8403     +0.3304
+      0.50   0.5624     0.8445     +0.2821  <-- lam=0.5
+      0.60   0.6149     0.8486     +0.2338
+      0.70   0.6673     0.8528     +0.1855
+      0.80   0.7198     0.8570     +0.1372
+      0.90   0.7723     0.8612     +0.0889
+      1.00   0.8248     0.8653     +0.0405
+      Delta_hat(lam=0.5)          = 0.2821
+      bootstrap 95% CI            = [0.2788, 0.2853]
+      theoretical LB (Thm 3)      = 0.2179  (d=0.238, abar=0.277, delta_C=0.000)
+      one-sided test H0:Delta=0.15  z=251.36  p=0.00e+00  (reject H0 -> Delta>0.15)
+      Cohen's d = 5.368
+      SEPARATION >= 0.15 with CI above 0.15, and empirical >= theory LB: PASS
+
+[V5] Theorem 4: accuracy-only metric is blind to alignment collapse.
+      lam=0.0  acc-only:(1.00,1.00) identical=True | RC:(1.00,0.00) gap=1.00
+      lam=0.5  acc-only:(1.00,1.00) identical=True | RC:(1.00,0.50) gap=0.50
+      lam=0.7  acc-only:(1.00,1.00) identical=True | RC:(1.00,0.70) gap=0.30
+      lam=1.0  acc-only:(1.00,1.00) identical=True | RC:(1.00,1.00) gap=0.00
+      => accuracy-only assigns EQUAL score to a safe and a collapsed model;
+         RC_lambda separates them by (1-lam) for every lam<1.  PASS
+
+[V6] Theorem 5 (certified variant): Cohen radius R=(sigma/2)(Phi^-1 pA - Phi^-1 pB).
+      sigma=0.25 pA=0.99 pB=0.01 -> R=0.5816  (eps<=R => rho=1)
+      sigma=0.25 pA=0.90 pB=0.10 -> R=0.3204  (eps<=R => rho=1)
+      sigma=0.25 pA=0.80 pB=0.20 -> R=0.2104  (eps<=R => rho=1)
+      sigma=0.50 pA=0.99 pB=0.01 -> R=1.1632  (eps<=R => rho=1)
+      sigma=0.50 pA=0.90 pB=0.10 -> R=0.6408  (eps<=R => rho=1)
+      sigma=0.50 pA=0.80 pB=0.20 -> R=0.4208  (eps<=R => rho=1)
+      sigma=1.00 pA=0.99 pB=0.01 -> R=2.3263  (eps<=R => rho=1)
+      sigma=1.00 pA=0.90 pB=0.10 -> R=1.2816  (eps<=R => rho=1)
+      sigma=1.00 pA=0.80 pB=0.20 -> R=0.8416  (eps<=R => rho=1)
+      If eps <= min(R_C,R_A): rho_C=rho_A=1 => RC_lambda=1 (fully certified).
+
+[figures] wrote figures/fig1_separation_vs_lambda.png, fig2_lipschitz_certificate.png, fig3_monotonicity.png
+
+========================================================================
+ALL NUMERICAL CHECKS PASSED.
+========================================================================

@@ -1,0 +1,23 @@
+Machine-learning systems deployed in scientific and high-stakes settings are
+routinely certified by a single scalar---accuracy---that is provably blind to the
+ethical failure modes (bias, integrity, transparency collapse) that adversarial
+prompts can induce while correctness is preserved. We formalize the informal
+hypothesis that models trained under explicit ethical constraints are more robust
+under adversarial perturbation, and that this gain is captured by a composite
+metric. We introduce the \emph{composite ethical-robustness coefficient}
+$\RC_\lambda(f,x,\varepsilon)=\lambda\,\rho_C+(1-\lambda)\,\rho_A$, a convex
+combination of the worst-case preservation ratios of scientific correctness and
+ethical alignment over an adversarial perturbation set, and prove six results
+about it. We show that $\RC_\lambda$ is well-posed (bounded in $[0,1]$, monotone
+non-increasing in the perturbation radius, exact at radius zero); that its deficit
+admits an exact TRADES-style additive decomposition into correctness- and
+alignment-stability terms; and---our central result---that a training-time
+constrained-Markov-decision-process alignment constraint, together with a bounded
+correctness cost, forces a provable separation between the constrained and the
+accuracy-only model that exceeds the target $0.15$ on an explicit, checkable
+parameter region. We further prove that the composite is \emph{necessary}: every
+correctness-only metric is provably blind to alignment collapse, whereas
+$\RC_\lambda$ separates a safe from a collapsed model by $1-\lambda$. Finally, we
+give attack-independent Lipschitz and randomized-smoothing certified lower bounds.
+Every algebraic step is machine-checked with a computer-algebra system, and every
+quantitative claim with a seeded Monte-Carlo study.

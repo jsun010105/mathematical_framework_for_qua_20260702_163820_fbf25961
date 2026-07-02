@@ -1,0 +1,332 @@
+\section{Main Results}
+\label{sec:results}
+
+Throughout, \ref{P0} and \ref{P1} give $\bar C\le C$ and $\bar A\le A$ pointwise;
+the floor $\tau$ matters only on the event $\{C<\tau\}$ or $\{A<\tau\}$, which is
+handled uniformly by the outer $\clip$.
+
+\subsection{Well-posedness}
+
+\begin{theorem}[Well-posedness]\label{thm:wellposed}
+For all $\lambda\in[0,1]$, $\varepsilon\ge0$, and $x$:
+\begin{enumerate}[label=\textup{(\alph*)},leftmargin=*]
+  \item $\RC_\lambda(f,x,\varepsilon)\in[0,1]$;
+  \item under \ref{P1}, $\varepsilon\mapsto\RC_\lambda(f,x,\varepsilon)$ is
+  non-increasing;
+  \item under \ref{P0}, if $C(f,x),A(f,x)\ge\tau$ then
+  $\RC_\lambda(f,x,0)=1$;
+  \item $\RC_\lambda$ is affine and non-decreasing in each of $\rho_C,\rho_A$, with
+  $\RC_1=\rho_C$ and $\RC_0=\rho_A$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\emph{(a)} By construction $\rho_C,\rho_A\in[0,1]$, since both are clipped to
+$[0,1]$. For $\lambda\in[0,1]$ the quantity $\RC_\lambda=\lambda\rho_C+(1-\lambda)
+\rho_A$ is a convex combination of two numbers in $[0,1]$: hence
+$\RC_\lambda\ge\lambda\cdot0+(1-\lambda)\cdot0=0$ and
+$\RC_\lambda\le\lambda\cdot1+(1-\lambda)\cdot1=1$.
+
+\emph{(b)} Let $\varepsilon_1\le\varepsilon_2$. By \ref{P1},
+$B(x,\varepsilon_1)\subseteq B(x,\varepsilon_2)$, so the minimum over the larger set
+is no larger:
+$\bar C(f,x,\varepsilon_2)=\min_{B(x,\varepsilon_2)}C
+\le\min_{B(x,\varepsilon_1)}C=\bar C(f,x,\varepsilon_1)$. Dividing by the
+$\varepsilon$-independent positive quantity $\max(C,\tau)$ and applying the
+non-decreasing map $\clip(\cdot,0,1)$ preserves the inequality, so
+$\rho_C(f,x,\varepsilon_2)\le\rho_C(f,x,\varepsilon_1)$; identically for $\rho_A$. A
+non-negatively weighted sum of non-increasing functions is non-increasing, whence
+the claim.
+
+\emph{(c)} By \ref{P0}, $B(x,0)=\{x\}$, so $\bar C(f,x,0)=C(f,x)$ and
+$\bar A(f,x,0)=A(f,x)$. If $C,A\ge\tau$ then $\max(C,\tau)=C$ and $\max(A,\tau)=A$,
+so $\rho_C=C/C=1$ and $\rho_A=A/A=1$; hence
+$\RC_\lambda(f,x,0)=\lambda+(1-\lambda)=1$.
+
+\emph{(d)} As a function of the pair $(\rho_C,\rho_A)$ the map is affine with
+partial derivatives $\partial\RC_\lambda/\partial\rho_C=\lambda\ge0$ and
+$\partial\RC_\lambda/\partial\rho_A=1-\lambda\ge0$, hence non-decreasing in each.
+Substituting $\lambda=1$ gives $\RC_1=\rho_C$ (the correctness-only robustness
+metric of \cref{thm:clever,thm:cohen}) and $\lambda=0$ gives $\RC_0=\rho_A$ (the
+alignment-only, $1-\mathrm{ASR}$ metric of \cite{Chao2024}).
+\end{proof}
+
+Part~(d) shows that the two established single-axis metrics are the endpoints of a
+one-parameter family; every interior $\lambda$ is a genuine composite. The
+following example records the intended reading of $\RC_\lambda$.
+
+\begin{example}\label{ex:reading}
+Suppose a model is perfectly correct-robust, $\rho_C=1$, but loses half its
+alignment margin under attack, $\rho_A=\tfrac12$. Then
+$\RC_{1}=1$ reports no problem, $\RC_{0}=\tfrac12$ reports the full problem, and
+$\RC_{1/2}=\tfrac34$ reports a proportionate blend. Only $\lambda<1$ registers the
+alignment loss at all; \cref{thm:necessity} makes this dichotomy exact.
+\end{example}
+
+\subsection{Exact decomposition}
+
+\begin{theorem}[Exact decomposition and normalized bound]\label{thm:decomp}
+For each score $S\in\{C,A\}$ the identity
+\begin{equation}\label{eq:decomp}
+  e_\rob^S=e_\nat^S+b^S
+\end{equation}
+holds exactly. Consequently, if the model has clean floors $c_{\min},a_{\min}$
+\textup{(\cref{def:reg})}, then
+\begin{equation}\label{eq:normbound}
+  1-\E[\RC_\lambda]
+    =\lambda\,\E\!\Big[\tfrac{C-\bar C}{C}\Big]
+     +(1-\lambda)\,\E\!\Big[\tfrac{A-\bar A}{A}\Big]
+    \le \lambda\,\frac{b^C}{c_{\min}}+(1-\lambda)\,\frac{b^A}{a_{\min}}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+\emph{Decomposition.} Fix $S\in\{C,A\}$ and any $x$. Since $\bar S\le S$, the
+identity $1-\bar S=(1-S)+(S-\bar S)$ holds pointwise, with $S-\bar S\ge0$. Taking
+$\E_{x\sim D}$ and using linearity of expectation gives
+$e_\rob^S=\E[1-\bar S]=\E[1-S]+\E[S-\bar S]=e_\nat^S+b^S$. This is the exact
+analogue of the TRADES identity of \cref{thm:trades}: a clean term plus a
+non-negative stability term.
+
+\emph{Normalized bound.} Suppose $C\ge c_{\min}>0$ almost surely. Then $\tau$ is
+inactive and $0\le\bar C\le C$, so the inner clip in $\rho_C$ is inactive and
+$\rho_C=\bar C/C$, whence $1-\rho_C=(C-\bar C)/C$. Because $0<c_{\min}\le C$ and
+$C-\bar C\ge0$, we have $(C-\bar C)/C\le(C-\bar C)/c_{\min}$; taking expectations,
+$\E[1-\rho_C]\le\E[C-\bar C]/c_{\min}=b^C/c_{\min}$, and symmetrically
+$\E[1-\rho_A]\le b^A/a_{\min}$. Finally, by linearity,
+\[
+  1-\E[\RC_\lambda]=\E\big[\lambda(1-\rho_C)+(1-\lambda)(1-\rho_A)\big]
+    =\lambda\,\E[1-\rho_C]+(1-\lambda)\,\E[1-\rho_A],
+\]
+which gives the stated equality and, combining the two component bounds, the
+inequality.
+\end{proof}
+
+\subsection{Constraint implies separation}
+
+We now state the central result: an ethical training constraint provably separates
+the constrained model from the accuracy-only one.
+
+\begin{theorem}[Constraint $\Rightarrow$ separation]\label{thm:main}
+Assume the alignment constraint \eqref{eq:EC} on $f_\eth$, the collapse
+\eqref{eq:CO} on $f_\acc$, the clean floor $A(f_\acc,\cdot)\ge a_{\min}$ almost
+surely, and a correctness-robustness cost bound
+\begin{equation}\label{eq:costbound}
+  \E[\rho_C^{\acc}]-\E[\rho_C^{\eth}]\le\delta_C.
+\end{equation}
+Then the separation $\Delta=\E[\RC_\lambda^{\eth}]-\E[\RC_\lambda^{\acc}]$ satisfies
+\begin{equation}\label{eq:main}
+  \Delta \;\ge\; (1-\lambda)\big[(1-d)-\bar a/a_{\min}\big]-\lambda\delta_C.
+\end{equation}
+In particular, whenever the right-hand side of \eqref{eq:main} is at least $0.15$,
+the hypothesis' target $\Delta\ge0.15$ holds.
+\end{theorem}
+
+\begin{proof}
+Write $\E[\RC_\lambda^m]=\lambda\E[\rho_C^m]+(1-\lambda)\E[\rho_A^m]$ for
+$m\in\{\eth,\acc\}$, so that
+\begin{equation}\label{eq:star}
+  \Delta=\lambda\big(\E[\rho_C^{\eth}]-\E[\rho_C^{\acc}]\big)
+        +(1-\lambda)\big(\E[\rho_A^{\eth}]-\E[\rho_A^{\acc}]\big).
+\end{equation}
+
+\emph{Step 1 (lower bound the ethical alignment term).} For every $x$ we have
+$A(f_\eth,x)\le1$, hence $\max(A_\eth,\tau)\le1$ (as $\tau<1$) and
+$\rho_A^{\eth}=\clip(\bar A_\eth/\max(A_\eth,\tau),0,1)\ge \bar A_\eth$, since
+dividing by a number $\le1$ only increases the value and the clip to $[0,1]$ can
+only raise a value below $1$. Taking expectations and applying \eqref{eq:EC},
+\begin{equation}\label{eq:step1}
+  \E[\rho_A^{\eth}]\ge\E[\bar A_\eth]\ge 1-d.
+\end{equation}
+
+\emph{Step 2 (upper bound the accuracy-only alignment term).} Since
+$A_\acc\ge a_{\min}$ almost surely, $\tau$ is inactive and
+$\rho_A^{\acc}=\clip(\bar A_\acc/A_\acc,0,1)\le \bar A_\acc/a_{\min}$, because
+$A_\acc\ge a_{\min}$ makes the ratio at most $\bar A_\acc/a_{\min}$ and the clip can
+only lower it. Taking expectations and applying \eqref{eq:CO},
+\begin{equation}\label{eq:step2}
+  \E[\rho_A^{\acc}]\le\E[\bar A_\acc]/a_{\min}\le \bar a/a_{\min}.
+\end{equation}
+Subtracting \eqref{eq:step2} from \eqref{eq:step1},
+\begin{equation}\label{eq:step12}
+  \E[\rho_A^{\eth}]-\E[\rho_A^{\acc}]\ge (1-d)-\bar a/a_{\min}=:\gamma_A.
+\end{equation}
+
+\emph{Step 3 (control the correctness term).} The cost bound
+\eqref{eq:costbound} is exactly $\E[\rho_C^{\eth}]-\E[\rho_C^{\acc}]\ge-\delta_C$.
+
+\emph{Step 4 (combine).} Substituting \eqref{eq:step12} and Step~3 into
+\eqref{eq:star}, and using $\lambda\ge0$, $1-\lambda\ge0$ to combine the two
+inequalities linearly,
+\[
+  \Delta\ge\lambda(-\delta_C)+(1-\lambda)\gamma_A
+    =(1-\lambda)\big[(1-d)-\bar a/a_{\min}\big]-\lambda\delta_C,
+\]
+which is \eqref{eq:main}.
+\end{proof}
+
+\begin{corollary}[The $\ge0.15$ claim]\label{cor:015}
+If $(1-\lambda)\big[(1-d)-\bar a/a_{\min}\big]-\lambda\delta_C\ge0.15$, then
+$\Delta\ge0.15$. For the parameters
+$\lambda=\tfrac12,\ d=\tfrac14,\ \bar a=0.30,\ a_{\min}=0.85,\ \delta_C=0.05$,
+\[
+  \Delta\ge\tfrac12\big(0.75-0.3529\big)-\tfrac12(0.05)
+    =\tfrac12(0.3971)-0.025=0.1735\ge0.15.
+\]
+\end{corollary}
+
+\begin{proof}
+Immediate from \eqref{eq:main}; the displayed arithmetic substitutes the stated
+values, using $\bar a/a_{\min}=0.30/0.85=0.3529$.
+\end{proof}
+
+\begin{remark}[Provenance of the hypotheses]\label{rem:provenance}
+Each ingredient of \cref{thm:main} corresponds to an established mechanism.
+Constraint \eqref{eq:EC} is the CMDP feasibility $J_C(\pi_\eth)\le d$ enforced up to
+an $O(\sqrt\delta)$ per-update slack by constrained policy optimization
+\cite[Prop.~2]{Achiam2017}, with the alignment cost $1-\bar A$ realized concretely
+by a Constitutional-AI constitution \cite{Bai2022a}. Collapse \eqref{eq:CO} models
+the documented jailbreak vulnerability of unconstrained models, with reported
+attack success rates as high as $84\%$ \cite{Zou2023}. The correctness cost
+$\delta_C$ bounds the accuracy--robustness price warned of by \cite{Tsipras2018}
+and is controlled by the choice of $\lambda$ through \cref{thm:lambda}.
+\end{remark}
+
+\subsection{Necessity of the composite}
+
+\begin{theorem}[Necessity of the composite]\label{thm:necessity}
+There exist models $f_1,f_2$ and a distribution with identical correctness behavior
+$C=\bar C=1$ (so $\rho_C=1$ and every correctness-only metric coincides on the two
+models) but $\rho_A(f_1)=1$ and $\rho_A(f_2)=0$. Consequently every metric that is a
+function of the correctness profile $(C,\bar C)$ alone assigns $f_1$ and $f_2$
+equal value, while
+\[
+  \RC_\lambda(f_1)-\RC_\lambda(f_2)=1-\lambda>0\quad\text{for all }\lambda<1.
+\]
+Thus accuracy-only evaluation is provably blind to alignment collapse, and
+$\lambda<1$ is necessary to detect it; symmetrically, $\lambda>0$ is necessary to
+detect correctness collapse.
+\end{theorem}
+
+\begin{proof}
+Take a two-point input space and two models. Set $C(f_i,x)=1$ and
+$\bar C(f_i,x,\varepsilon)=1$ for $i\in\{1,2\}$, so that $\rho_C(f_i)=1$; the two
+models have identical correctness profiles. For alignment set $A(f_i,x)=1$ (both
+aligned on clean input), and under the adversary let $\bar A(f_1,x,\varepsilon)=1$
+(alignment holds) while $\bar A(f_2,x,\varepsilon)=0$ (alignment collapses). Then
+$\rho_A(f_1)=1$ and $\rho_A(f_2)=0$.
+
+Let $M$ be any metric depending on the model only through $(C,\bar C)$; this class
+includes clean accuracy, robust accuracy, the CLEVER score of \cref{thm:clever},
+and the certified radius of \cref{thm:cohen}. Since $f_1$ and $f_2$ share
+$(C,\bar C)\equiv(1,1)$, we have $M(f_1)=M(f_2)$: $M$ cannot distinguish the aligned
+model from the collapsed one. In contrast, for $\lambda<1$,
+\[
+  \RC_\lambda(f_1)-\RC_\lambda(f_2)
+    =\big[\lambda\cdot1+(1-\lambda)\cdot1\big]-\big[\lambda\cdot1+(1-\lambda)\cdot0\big]
+    =1-\lambda>0,
+\]
+so the composite strictly separates them, and the separation degrades to $0$ exactly
+as $\lambda\to1$. Exchanging the roles of $C$ and $A$ in the construction yields two
+models with identical alignment profiles but different correctness robustness,
+separated by $\RC_\lambda$ precisely when $\lambda>0$. Hence any single-axis metric
+is insufficient and an interior $\lambda\in(0,1)$ is required to detect both failure
+modes.
+\end{proof}
+
+This is the composite-metric sharpening of the message of \cite{Tsipras2018} that a
+single number is inadequate---here made exact for the correctness-versus-alignment
+pair.
+
+\subsection{Certified lower bounds}
+
+\begin{theorem}[Certified lower bounds]\label{thm:certified}
+Fix $x$ and $\varepsilon\ge0$.
+\begin{enumerate}[label=\textup{(\alph*)},leftmargin=*]
+  \item \textup{(Lipschitz.)} If $C(f,\cdot)$ is $L_C$-Lipschitz and $A(f,\cdot)$ is
+  $L_A$-Lipschitz on $B(x,\varepsilon)$, then
+  \[
+    \RC_\lambda(f,x,\varepsilon)\ge 1-\varepsilon\Big(\frac{\lambda L_C}{\max(C,\tau)}
+      +\frac{(1-\lambda)L_A}{\max(A,\tau)}\Big),
+  \]
+  and under clean floors this is at least
+  $1-\varepsilon\big(\lambda L_C/c_{\min}+(1-\lambda)L_A/a_{\min}\big)$.
+  \item \textup{(Smoothing.)} Suppose $C$ and $A$ are read off Gaussian-smoothed
+  classifiers with Cohen radii $R_C,R_A$ \textup{(\cref{thm:cohen})}. If
+  $\varepsilon\le\min(R_C,R_A)$, then $\rho_C=\rho_A=1$ and hence
+  $\RC_\lambda(f,x,\varepsilon)=1$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\emph{(a)} Fix $x$. For any $x'\in B(x,\varepsilon)$, $L_C$-Lipschitzness gives
+$|C(f,x')-C(f,x)|\le L_C\,d(x',x)\le L_C\varepsilon$, hence $C(f,x')\ge C-L_C
+\varepsilon$. Taking the minimum over $x'\in B(x,\varepsilon)$ yields
+$\bar C\ge C-L_C\varepsilon$. Therefore
+\[
+  \rho_C=\clip\!\Big(\tfrac{\bar C}{\max(C,\tau)},0,1\Big)
+    \ge\clip\!\Big(\tfrac{C-L_C\varepsilon}{\max(C,\tau)},0,1\Big)
+    \ge 1-\frac{L_C\varepsilon}{\max(C,\tau)},
+\]
+where the last step uses that $\frac{C-L_C\varepsilon}{\max(C,\tau)}\ge
+1-\frac{L_C\varepsilon}{\max(C,\tau)}$ (equality when $\max(C,\tau)=C$, otherwise
+the left side is larger) together with the fact that clipping to $[0,1]$ only raises
+a value that is at most $1$. Symmetrically $\rho_A\ge1-L_A\varepsilon/\max(A,\tau)$.
+Combining,
+\[
+  \RC_\lambda=\lambda\rho_C+(1-\lambda)\rho_A
+    \ge 1-\varepsilon\Big(\frac{\lambda L_C}{\max(C,\tau)}
+      +\frac{(1-\lambda)L_A}{\max(A,\tau)}\Big),
+\]
+and under the clean floors $\max(C,\tau)\ge c_{\min}$, $\max(A,\tau)\ge a_{\min}$
+give the second bound. The certificate is attack-independent: it uses only the
+Lipschitz constants, estimable as in \cite{Weng2018}, with no explicit attack.
+
+\emph{(b)} By \cref{thm:cohen}, within the $\ell_2$-ball of radius $R_C$ the
+smoothed correctness classifier---and hence the correctness score---is unchanged, so
+$\bar C(f,x,\varepsilon)=C(f,x)$ whenever $\varepsilon\le R_C$; likewise
+$\bar A=A$ whenever $\varepsilon\le R_A$. Thus if $\varepsilon\le\min(R_C,R_A)$ then
+$\bar C=C$ and $\bar A=A$, giving $\rho_C=\rho_A=1$ and
+$\RC_\lambda(f,x,\varepsilon)=1$.
+\end{proof}
+
+\begin{example}\label{ex:cohen}
+For $\sigma=0.5$, $p_A=0.99$, $p_B=0.01$, \cref{thm:cohen} gives
+$R=\tfrac{0.5}{2}\big(\Phi^{-1}(0.99)-\Phi^{-1}(0.01)\big)=1.163$. If both the
+correctness and alignment classifiers certify at this radius, then $\RC_\lambda=1$
+for every $\varepsilon\le1.163$ and every $\lambda$.
+\end{example}
+
+\subsection{The admissible-weight region}
+
+\begin{theorem}[Admissible-weight region]\label{thm:lambda}
+Write $\gamma_A=(1-d)-\bar a/a_{\min}$ for the alignment gain and $\delta_C\ge0$ for
+the correctness cost, and assume $\gamma_A>0$. The Theorem~\ref{thm:main} bound
+$\Delta_{\mathrm{LB}}(\lambda)=(1-\lambda)\gamma_A-\lambda\delta_C
+=\gamma_A-\lambda(\gamma_A+\delta_C)$ is non-increasing in $\lambda$, and for any
+target $t$,
+\[
+  \Delta_{\mathrm{LB}}(\lambda)\ge t
+  \iff \lambda\le\frac{\gamma_A-t}{\gamma_A+\delta_C},
+\]
+a non-empty subset of $[0,1]$ precisely when $\gamma_A>t$. In particular a net gain
+$\Delta>0$ is guaranteed iff $\lambda<\gamma_A/(\gamma_A+\delta_C)$.
+\end{theorem}
+
+\begin{proof}
+Rearranging \eqref{eq:main} gives
+$\Delta_{\mathrm{LB}}(\lambda)=\gamma_A-\lambda(\gamma_A+\delta_C)$, which is affine
+in $\lambda$ with slope $-(\gamma_A+\delta_C)\le0$, hence non-increasing. Solving
+$\gamma_A-\lambda(\gamma_A+\delta_C)\ge t$ for $\lambda$ (with $\gamma_A+\delta_C>0$)
+gives $\lambda\le(\gamma_A-t)/(\gamma_A+\delta_C)$; the threshold lies in $[0,1]$ and
+the region is non-empty iff $\gamma_A-t>0$, i.e. $\gamma_A>t$. Setting $t=0$ gives
+the net-gain region.
+\end{proof}
+
+\begin{example}\label{ex:sweep}
+With $d=0.238$, $\bar a=0.277$, $a_{\min}=0.85$ (the modeled regime of
+\cref{sec:discussion}) and $\delta_C=0$, we have $\gamma_A=0.762-0.326=0.436$, so
+$\Delta_{\mathrm{LB}}(\lambda)=0.436(1-\lambda)$ crosses $0.15$ at
+$\lambda=1-0.15/0.436\approx0.66$; the empirical separation stays above $0.15$ up to
+$\lambda\approx0.85$, consistent with the bound being a lower estimate.
+\end{example}

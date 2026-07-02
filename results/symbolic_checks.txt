@@ -1,0 +1,39 @@
+========================================================================
+SYMBOLIC VERIFICATION OF RC_lambda THEOREMS (SymPy 1.14.0)
+========================================================================
+
+[T1a] RC_lambda = lam*rC + (1-lam)*rA is a convex combination.
+      RC at (rC,rA)=(0,0): 0
+      RC at (rC,rA)=(1,1): 1
+      dRC/drC = lambda  (>=0 on lam in [0,1]) ; dRC/drA = 1 - lambda  (>=0)
+      => min at (0,0)=0, max at (1,1)=1  ==> RC in [0,1].  OK
+
+[T1-reduction] Boundary weights recover the single-term metrics.
+      RC(lam=1) = rho_C   (pure correctness robustness, CLEVER/certified-style)
+      RC(lam=0) = rho_A   (pure alignment robustness, 1-ASR-style)
+
+[T2] Exact decomposition (per-input, hence under E):
+      (1 - Sbar) - [(1 - S) + (S - Sbar)] = 0
+      => e_rob^S = e_nat^S + b^S  is an identity (matches TRADES R_rob=R_nat+R_bdy). OK
+
+[T2-bound] 1 - rho_C = (C-Cbar)/C ; with C>=c_min: <= (C-Cbar)/c_min
+      (1 - Cbar/C) - (C-Cbar)/C = 0
+      (C-Cbar)/c_min - (C-Cbar)/C = (C-Cbar)*(1/c_min - 1/C) >= 0 for c_min<=C. OK
+
+[T5] Lipschitz certificate: Sbar >= S - L*eps  =>  rho >= 1 - L*eps/S
+      (S - L*eps)/S = (-L*epsilon + S)/S
+      => RC_lambda >= 1 - eps*( lam*L_C/c_min + (1-lam)*L_A/a_min ).
+         RC_cert simplified: -L*epsilon*lambda/c_min + L_A*epsilon*lambda/a_min - L_A*epsilon/a_min + 1
+
+[T3] Delta >= (1-lam)*[(1-d) - abar/a_min] - lam*delta_C
+      Delta_lb = (-a_min*delta_C*lambda + (lambda - 1)*(a_min*(d - 1) + abar))/a_min
+      At lam=1/2, d=1/4, abar=0.30, a_min=0.85, delta_C=0.05:
+      Delta_lb = 59/340 = 0.1735  (target >= 0.15: MET)
+
+[T6] Delta_lb(lam) = gamma_A - lam*(gamma_A + delta_C).
+      Delta_lb >= t  <=>  lam <= (gamma_A - t)/(gamma_A + delta_C) = (gamma_A - t)/(delta_C + gamma_A)
+      (requires gamma_A > t; net gain Delta>0 <=> lam < gamma_A/(gamma_A+delta_C).)
+
+========================================================================
+ALL SYMBOLIC CHECKS PASSED.
+========================================================================

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/literature_review.md",
+        "resources_catalog": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/resources.md",
+        "papers_dir": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/papers",
+        "code_dir": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/code"
+      },
+      "log_file": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/logs/resource_finder_claude.log",
+      "transcript_file": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/logs/resource_finder_claude_transcript.jsonl",
+      "elapsed_time": 1352.1673784255981
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 6676.07998085022,
+      "log_file": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/logs/execution_claude.log",
+      "transcript_file": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961/logs/execution_claude_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/mathematical_framework_for_qua_20260702_163820_fbf25961"
+}

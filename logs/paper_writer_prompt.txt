@@ -1,0 +1,1191 @@
+You are an academic paper writer for mathematics. Generate a complete AMS-style
+paper based on the mathematical results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .claude/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW AMS SAMPLE: Skim paper_draft/example_paper.tex for LaTeX formatting
+   conventions ONLY — it is the official AMS journal sample file that demonstrates
+   how to use amsart theorem environments, equation formatting, list types,
+   bibliography style, and document structure. It is NOT a real paper and its
+   "content" is purely illustrative (placeholder lemmas, dummy proofs, etc.).
+   Do NOT imitate its content or narrative structure.
+4. REVIEW LANGUAGE STYLE: Browse paper_examples/ for language and exposition patterns
+5. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex)
+   are pre-copied to paper_draft/commands/
+
+CRITICAL: The AMS sample file is a LaTeX formatting reference, not a content template.
+Use it to learn \documentclass{amsart} conventions (theorem/proof environments,
+\bibliographystyle{amsplain}, author/address blocks). Write your own content
+based on the research report below.
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# Mathematical Framework for Quantifying Ethical Robustness in Adversarial ML Systems
+
+**Domain:** Mathematics (formal robustness theory) · **Compute:** CPU-only ·
+**Date:** 2026-07-02 · **Seed:** 42
+
+---
+
+## 1. Executive Summary
+
+We formalize the informal hypothesis — *"models trained with explicit ethical
+constraints are ≥ 0.15 more robust than accuracy-only models under adversarial
+prompts, and this is captured by a composite metric"* — as a set of theorems about
+a **composite ethical-robustness coefficient**
+
+    RC_λ(f, x, ε) = λ·ρ_C(f,x,ε) + (1−λ)·ρ_A(f,x,ε),   λ ∈ [0,1],
+
+where ρ_C, ρ_A ∈ [0,1] are the worst-case *preservation ratios* of scientific
+correctness `C` and ethical alignment `A` over an adversarial perturbation set
+`B(x,ε)` (astrophysics prompts being one instantiation; the mathematics is
+domain-agnostic). We prove six results: (T1) `RC_λ` is well-posed — bounded in
+`[0,1]`, monotone non-increasing in ε, equal to 1 at ε=0; (T2) its deficit obeys
+an **exact TRADES-style additive decomposition** into correctness- and
+alignment-stability terms; (T3) — **the central theorem** — a training-time CMDP
+alignment constraint `E[1−Ā_eth] ≤ d`, together with a bounded correctness cost
+`δ_C`, forces the separation
+
+    Δ = E[RC_λ^{eth}] − E[RC_λ^{acc}]  ≥  (1−λ)·[(1−d) − ā/a_min] − λ·δ_C,
+
+which is `≥ 0.15` on an explicit, checkable parameter region; (T4) the composite is
+**necessary** — every accuracy-only metric is provably blind to alignment collapse,
+while `RC_λ` (λ<1) separates a safe from a collapsed model by `1−λ`; (T5) `RC_λ`
+admits **attack-independent** Lipschitz and randomized-smoothing (Cohen) certified
+lower bounds; (T6) a corollary gives the admissible-λ region for any target
+separation.
+
+Every algebraic step is machine-checked with SymPy and every quantitative claim
+with a seeded Monte-Carlo study (n = 20 000): the modeled regime yields
+**Δ̂(λ=0.5) = 0.282**, bootstrap 95% CI **[0.279, 0.285]** — entirely above the
+0.15 target — respecting the Theorem 3 lower bound (0.218) and giving Cohen's
+**d = 5.4** (one-sided test of `H₀: Δ = 0.15` rejected, p ≈ 0).
+
+**Answer to the research question:** *Yes.* The ≥ 0.15 claim is not merely
+empirical — it is a **theorem** with explicit sufficient conditions relating the
+ethical-constraint level `d`, the clean-competence floor `a_min`, the accuracy-only
+collapse level `ā`, the correctness cost `δ_C`, and the weight `λ`.
+
+---
+
+## 2. Research Question
+
+Can the informal hypothesis be turned into a rigorous statement — a precisely
+defined coefficient `RC_λ` with provable analytic properties, plus explicit
+sufficient conditions under which a training-time ethical constraint *guarantees*
+`Δ = E[RC_λ^{eth}] − E[RC_λ^{acc}] ≥ 0.15`? And is such a composite *necessary*, or
+does accuracy alone suffice?
+
+---
+
+## 3. Definitions and Notation
+
+(Full version in `definitions.md`.) Inputs `x ∼ D`; `f` a model. The **perturbation
+set** `B(x,ε)` satisfies **(P0)** `B(x,0)={x}` and **(P1)** nesting
+`ε₁≤ε₂ ⇒ B(x,ε₁)⊆B(x,ε₂)` (true for ℓ_p balls and for prompt families measured by
+suffix length / edit distance / token-substitution radius).
+
+- `C(f,x), A(f,x) ∈ [0,1]` — clean scientific-correctness and ethical-alignment
+  scores (`A = 1 − ASR`-style, aggregating bias / reproducibility / transparency /
+  integrity / privacy).
+- `C̄(f,x,ε)=min_{x'∈B(x,ε)}C(f,x')`, `Ā(f,x,ε)=min_{x'∈B(x,ε)}A(f,x')` — worst-case
+  scores. By (P0)+(P1), `C̄≤C`, `Ā≤A`, and `C̄(·,0)=C`, `Ā(·,0)=A`.
+- **Component robustness** (floor `τ∈(0,1)`):
+  `ρ_C = clip(C̄/max(C,τ),0,1)`, `ρ_A = clip(Ā/max(A,τ),0,1)`.
+- **Composite:** `RC_λ = λρ_C + (1−λ)ρ_A`; `RC_λ(f,ε)=E_x[RC_λ(f,x,ε)]`.
+- **Decomposition quantities** for `S∈{C,A}`: natural deficit `e_nat^S=E[1−S]`,
+  robust deficit `e_rob^S=E[1−S̄]`, stability gap `b^S=E[S−S̄]≥0`.
+- **Regularity:** clean floors `C≥c_min`, `A≥a_min` a.s.; Lipschitz constants
+  `L_C,L_A` of `C(f,·),A(f,·)` on `B(x,ε)`.
+- **Ethical-constraint model (CMDP/CPO, Achiam 2017):** ethical training satisfies
+  **(EC)** `E[1−Ā_eth]≤d` (i.e. `E[Ā_eth]≥1−d`); accuracy-only model may collapse,
+  **(CO)** `E[Ā_acc]≤ā`.
+
+---
+
+## 4. Statement of Results
+
+- **Theorem 1 (Well-posedness).** For all `λ∈[0,1]`, `ε≥0`, `x`:
+  (a) `RC_λ(f,x,ε)∈[0,1]`; (b) under (P1), `ε↦RC_λ(f,x,ε)` is non-increasing;
+  (c) under (P0), if `C,A≥τ` then `RC_λ(f,x,0)=1`; (d) `RC_λ` is affine and
+  non-decreasing in each of `ρ_C,ρ_A`, and `RC_1=ρ_C`, `RC_0=ρ_A` recover the
+  single-term correctness- and alignment-robustness metrics.
+
+- **Theorem 2 (Exact decomposition + normalized bound).** For each score
+  `S∈{C,A}`, `e_rob^S = e_nat^S + b^S` (exact). Consequently, if `C≥c_min` and
+  `A≥a_min` a.s.,
+  `1 − E[RC_λ] = λ·E[(C−C̄)/C] + (1−λ)·E[(A−Ā)/A] ≤ λ·b^C/c_min + (1−λ)·b^A/a_min.`
+
+- **Theorem 3 (Constraint ⇒ separation; MAIN).** Assume (EC), (CO), clean floor
+  `A_acc≥a_min` a.s., and a correctness-robustness cost bound
+  `E[ρ_C^{acc}]−E[ρ_C^{eth}] ≤ δ_C`. Then
+  `Δ = E[RC_λ^{eth}] − E[RC_λ^{acc}] ≥ (1−λ)·[(1−d) − ā/a_min] − λ·δ_C.`
+  In particular, whenever `(1−λ)[(1−d)−ā/a_min] − λδ_C ≥ 0.15`, the hypothesis'
+  `Δ≥0.15` holds. (E.g. `λ=½, d=¼, ā=0.30, a_min=0.85, δ_C=0.05 ⇒ Δ≥0.1735`.)
+
+- **Theorem 4 (Necessity of the composite).** There exist models `f₁,f₂` and a
+  distribution with identical correctness behavior (`C=C̄=1`, so `ρ_C=1` and every
+  correctness-only metric coincides) yet `ρ_A(f₁)=1`, `ρ_A(f₂)=0`. Any metric that
+  is a function of `C,C̄` alone assigns them equal value, whereas
+  `RC_λ(f₁)−RC_λ(f₂) = 1−λ > 0` for all `λ<1`. Hence accuracy-only evaluation is
+  provably blind to alignment collapse, and `λ<1` is necessary to detect it
+  (symmetrically `λ>0` is necessary to detect correctness collapse).
+
+- **Theorem 5 (Certified lower bounds).**
+  (a) *Lipschitz.* If `C(f,·)` is `L_C`-Lipschitz and `A(f,·)` is `L_A`-Lipschitz on
+  `B(x,ε)`, then `RC_λ(f,x,ε) ≥ 1 − ε·(λL_C/max(C,τ) + (1−λ)L_A/max(A,τ))`; under
+  the clean floors, `≥ 1 − ε·(λL_C/c_min + (1−λ)L_A/a_min)`.
+  (b) *Smoothing.* For Gaussian-smoothed scores, if `ε ≤ min(R_C,R_A)` with Cohen's
+  certified radius `R = (σ/2)(Φ⁻¹(p_A)−Φ⁻¹(p_B))` for each component, then
+  `ρ_C=ρ_A=1` and `RC_λ(f,x,ε)=1` (fully certified).
+
+- **Theorem 6 (Admissible-λ region).** Writing the alignment gain
+  `γ_A=(1−d)−ā/a_min>0` and correctness cost `δ_C≥0`, the Theorem-3 bound is
+  `Δ_LB(λ)=γ_A − λ(γ_A+δ_C)`, which is decreasing in λ. Thus `Δ_LB≥t` iff
+  `λ ≤ (γ_A−t)/(γ_A+δ_C)` (requires `γ_A>t`); a net gain `Δ>0` holds iff
+  `λ < γ_A/(γ_A+δ_C)`.
+
+---
+
+## 5. Proofs
+
+Throughout, (P0)/(P1) give `C̄≤C`, `Ā≤A`; and the floor `τ` only matters on the
+measure-zero-in-practice event `C<τ` or `A<τ`, handled by the `clip`.
+
+### Theorem 1 (Well-posedness)
+
+**(a) Bounds.** By construction `ρ_C,ρ_A∈[0,1]` (they are clipped to `[0,1]`). For
+`λ∈[0,1]`, `RC_λ=λρ_C+(1−λ)ρ_A` is a convex combination of two numbers in `[0,1]`,
+hence `RC_λ∈[0,1]`. Formally, `RC_λ ≥ λ·0+(1−λ)·0 = 0` and
+`RC_λ ≤ λ·1+(1−λ)·1 = 1`. ∎
+
+**(b) Monotonicity in ε.** Let `ε₁≤ε₂`. By (P1), `B(x,ε₁)⊆B(x,ε₂)`, so the
+minimum over the larger set is no larger:
+`C̄(f,x,ε₂)=min_{B(x,ε₂)}C ≤ min_{B(x,ε₁)}C=C̄(f,x,ε₁)`. Dividing by the
+`ε`-independent quantity `max(C,τ)>0` and clipping (a non-decreasing operation)
+preserves the inequality: `ρ_C(f,x,ε₂)≤ρ_C(f,x,ε₁)`. Identically
+`ρ_A(f,x,ε₂)≤ρ_A(f,x,ε₁)`. A non-negative-weighted sum of non-increasing functions
+is non-increasing, so `RC_λ(f,x,ε₂)≤RC_λ(f,x,ε₁)`. ∎
+
+**(c) ε=0 limit.** By (P0), `B(x,0)={x}`, so `C̄(f,x,0)=C(f,x)` and
+`Ā(f,x,0)=A(f,x)`. If `C,A≥τ` then `ρ_C=C/C=1`, `ρ_A=A/A=1`, hence
+`RC_λ(f,x,0)=λ+(1−λ)=1`. ∎
+
+**(d) Structure.** `∂RC_λ/∂ρ_C=λ≥0`, `∂RC_λ/∂ρ_A=1−λ≥0` (affine, monotone).
+Setting `λ=1` gives `RC_1=ρ_C` (the correctness-only robustness, the object
+CLEVER / certified radius estimate); `λ=0` gives `RC_0=ρ_A` (the alignment-only
+robustness, `1−ASR`-style). ∎  *(Verified symbolically: `symbolic_checks.py` [T1a],
+[T1-reduction]; numerically: `verify_theorems.py` V1.)*
+
+### Theorem 2 (Exact decomposition + normalized bound)
+
+**Decomposition.** Fix `S∈{C,A}` and any `x`. Since `S̄≤S`, the trivial identity
+`1−S̄ = (1−S) + (S−S̄)` holds pointwise with `S−S̄≥0`. Taking `E_{x∼D}` and using
+linearity of expectation, `e_rob^S = E[1−S̄] = E[1−S] + E[S−S̄] = e_nat^S + b^S`.
+This is the exact analogue of the TRADES identity `R_rob=R_nat+R_bdy` (Zhang 2019,
+Def. 2.1–2.3): a *clean* term plus a non-negative *stability/boundary* term. ∎
+
+**Normalized bound.** Suppose `C≥c_min>0` a.s. For each `x`, `ρ_C=C̄/C` (the clip
+is inactive since `0≤C̄≤C`), so `1−ρ_C=(C−C̄)/C`. Because `0<c_min≤C` and
+`C−C̄≥0`, we have `(C−C̄)/C ≤ (C−C̄)/c_min`. Taking expectations,
+`E[1−ρ_C] ≤ E[C−C̄]/c_min = b^C/c_min`; symmetrically `E[1−ρ_A]≤b^A/a_min`. Now
+`1−E[RC_λ] = E[λ(1−ρ_C)+(1−λ)(1−ρ_A)] = λE[1−ρ_C]+(1−λ)E[1−ρ_A]`, giving
+`1−E[RC_λ] ≤ λ·b^C/c_min + (1−λ)·b^A/a_min`. ∎ *(Verified: [T2], [T2-bound]; V2 —
+residual `1.1e-16`.)*
+
+### Theorem 3 (Constraint ⇒ separation) — MAIN
+
+Write `E[RC_λ^m]=λE[ρ_C^m]+(1−λ)E[ρ_A^m]` for `m∈{eth,acc}`, so
+
+    Δ = λ·(E[ρ_C^{eth}]−E[ρ_C^{acc}]) + (1−λ)·(E[ρ_A^{eth}]−E[ρ_A^{acc}]).   (★)
+
+**Step 1 — lower bound the ethical alignment robustness via (EC).**
+For every `x`, `A(f_eth,x)≤1`, hence `ρ_A^{eth}=Ā_eth/max(A_eth,τ) ≥ Ā_eth/1 =
+Ā_eth` (using `max(A,τ)≤1` since `A≤1` and `τ<1`; on the clip-active event
+`ρ_A=... ` the clip only raises the value, preserving `≥`). Taking expectations and
+applying (EC) `E[Ā_eth]≥1−d`:
+`E[ρ_A^{eth}] ≥ E[Ā_eth] ≥ 1−d.`   (i)
+
+**Step 2 — upper bound the accuracy-only alignment robustness via (CO)+floor.**
+Since `A_acc≥a_min` a.s., `ρ_A^{acc}=Ā_acc/max(A_acc,τ)=Ā_acc/A_acc ≤ Ā_acc/a_min`
+(clip to `[0,1]` only lowers the value, preserving `≤`). Taking expectations and
+applying (CO) `E[Ā_acc]≤ā`:
+`E[ρ_A^{acc}] ≤ E[Ā_acc]/a_min ≤ ā/a_min.`   (ii)
+
+Subtracting (ii) from (i):
+`E[ρ_A^{eth}]−E[ρ_A^{acc}] ≥ (1−d) − ā/a_min =: γ_A.`   (iii)
+
+**Step 3 — control the correctness term.** By hypothesis
+`E[ρ_C^{acc}]−E[ρ_C^{eth}]≤δ_C`, i.e. `E[ρ_C^{eth}]−E[ρ_C^{acc}] ≥ −δ_C.`   (iv)
+
+**Step 4 — combine.** Substitute (iii),(iv) into (★). Since `λ≥0` and `1−λ≥0`, the
+inequalities combine linearly:
+`Δ ≥ λ·(−δ_C) + (1−λ)·γ_A = (1−λ)[(1−d) − ā/a_min] − λδ_C.` ∎
+
+**Corollary (the ≥0.15 claim).** If `(1−λ)[(1−d)−ā/a_min] − λδ_C ≥ 0.15`, then
+`Δ≥0.15`. For `λ=½, d=¼, ā=0.30, a_min=0.85, δ_C=0.05`:
+`Δ ≥ ½(0.75−0.3529)−½(0.05) = ½(0.3971)−0.025 = 0.1735 ≥ 0.15.` ∎
+*(Verified: [T3]; Monte-Carlo V4 gives `Δ̂=0.282 ≥` realized bound `0.218`, CI
+`[0.279,0.285]`.)*
+
+**Remark (where each ingredient comes from).** (EC) is exactly the CMDP feasibility
+`J_C(π_eth)≤d` (Def. 2.8) that CPO enforces up to `O(√δ)` per update (Achiam 2017,
+Prop. 2); the "constitution" of Constitutional AI (Bai 2022) is a concrete way to
+realize the alignment cost `ℓ_A=1−Ā`. (CO) models the empirically-documented
+jailbreak collapse of unconstrained models (GCG, Zou 2023; ASR up to 84%). `δ_C`
+bounds the correctness price warned about by the accuracy–robustness trade-off
+(Tsipras 2018) and is controlled by choosing `λ` via Theorem 6.
+
+### Theorem 4 (Necessity of the composite)
+
+Take a two-point input space and two models. Both are perfectly correct and robust
+in correctness: `C(f_i,x)=1` and `C̄(f_i,x,ε)=1` for `i∈{1,2}`, so `ρ_C(f_i)=1`.
+Alignment: `A(f_i,x)=1` (both aligned on clean input), but under adversary
+`Ā(f_1,x,ε)=1` (holds) while `Ā(f_2,x,ε)=0` (collapses). Then `ρ_A(f_1)=1`,
+`ρ_A(f_2)=0`.
+
+Let `M` be **any** metric that depends on the model only through its correctness
+profile `(C,C̄)` — this includes clean accuracy, robust accuracy, CLEVER, and the
+certified radius. Since `f_1,f_2` share `(C,C̄)≡(1,1)`, `M(f_1)=M(f_2)`: `M` cannot
+distinguish the aligned model from the collapsed one. In contrast, for `λ<1`,
+`RC_λ(f_1)−RC_λ(f_2) = [λ·1+(1−λ)·1] − [λ·1+(1−λ)·0] = 1−λ > 0.` Thus the composite
+strictly separates them, and the separation degrades to 0 exactly as `λ→1`,
+showing `λ<1` is *necessary*. By the symmetric construction (swap the roles of `C`
+and `A`), `λ>0` is necessary to detect correctness collapse. Hence any single-term
+metric is provably insufficient and an interior `λ∈(0,1)` is required to detect
+both failure modes. ∎ *(Verified: V5 — accuracy-only gap `0.00`, `RC_{0.5}` gap
+`0.50`.)*
+
+This is the composite-metric analogue of the Tsipras (2018) message that a single
+accuracy number is inadequate — here made exact for the correctness-vs-alignment
+pair.
+
+### Theorem 5 (Certified lower bounds)
+
+**(a) Lipschitz.** Fix `x`. For any `x'∈B(x,ε)`, `L_C`-Lipschitzness gives
+`|C(f,x')−C(f,x)| ≤ L_C·d(x',x) ≤ L_C·ε`, hence `C(f,x') ≥ C − L_C ε`. Taking the
+min over `x'∈B(x,ε)`: `C̄ ≥ C − L_C ε`. Therefore
+`ρ_C = clip(C̄/max(C,τ),0,1) ≥ clip((C−L_Cε)/max(C,τ),0,1) ≥ 1 − L_Cε/max(C,τ)`
+(the last step because `(C−L_Cε)/C = 1 − L_Cε/C`, and clipping to `[0,1]` only
+increases a value that is `≤1`). Symmetrically `ρ_A ≥ 1 − L_Aε/max(A,τ)`. Then
+`RC_λ = λρ_C+(1−λ)ρ_A ≥ 1 − ε(λL_C/max(C,τ)+(1−λ)L_A/max(A,τ))`, and under the
+clean floors `≥ 1 − ε(λL_C/c_min+(1−λ)L_A/a_min)`. This is *attack-independent*: it
+needs only the Lipschitz constants (estimable à la CLEVER, Weng 2018), no explicit
+attack. ∎
+
+**(b) Smoothing.** For a Gaussian-smoothed score with top/runner-up class
+probabilities `p_A≥p_B` at `x`, Cohen's theorem (2019) gives a certified radius
+`R=(σ/2)(Φ⁻¹(p_A)−Φ⁻¹(p_B))` within which the smoothed prediction — hence the
+score — is unchanged. Apply this to the correctness classifier (radius `R_C`) and
+the alignment classifier (radius `R_A`). If `ε ≤ min(R_C,R_A)`, then within
+`B(x,ε)` neither score changes, so `C̄=C`, `Ā=A`, giving `ρ_C=ρ_A=1` and hence
+`RC_λ(f,x,ε)=1`. ∎ *(Verified: V3 — bound respected at all `ε∈[0,0.3]`; V6 — Cohen
+radii, e.g. `σ=0.5,p_A=0.99,p_B=0.01 ⇒ R=1.163`.)*
+
+### Theorem 6 (Admissible-λ region)
+
+From Theorem 3, `Δ_LB(λ) = (1−λ)γ_A − λδ_C = γ_A − λ(γ_A+δ_C)`, linear and
+(since `γ_A+δ_C≥0`) non-increasing in `λ`. Solving `Δ_LB(λ)≥t`:
+`γ_A − λ(γ_A+δ_C) ≥ t ⟺ λ ≤ (γ_A−t)/(γ_A+δ_C)`, which is a non-empty subset of
+`[0,1]` iff `γ_A>t`. Setting `t=0` gives the net-gain region
+`λ < γ_A/(γ_A+δ_C)`. ∎ *(Verified: [T6]; the V4 λ-sweep is monotone decreasing in λ,
+crossing 0.15 near `λ≈0.85`, matching `Δ_LB≥0.15 ⟺ λ≤(γ_A−0.15)/(γ_A+δ_C)`.)*
+
+---
+
+## 6. Computational Verification
+
+All scripts are seeded (`seed=42`) and reproduce identically across runs
+(`Δ̂=0.282083` on both runs). Environment: Python 3.12.8, NumPy 2.5.0, SciPy 1.18.0,
+SymPy 1.14.0, Matplotlib 3.11.0 (see `results/config.json`).
+
+| Check | Theorem | Result | File |
+|---|---|---|---|
+| Symbolic identities & inequalities | T1,T2,T5,T3,T6 | all pass (residual 0) | `results/symbolic_checks.txt` |
+| V1 bounds & monotonicity | T1 | `RC∈[0,1]` (min 1.3e-5, max 0.99999); `E[RC]` 1.0→0.27 non-increasing; ε=0 ⇒ 1.0 | `results/numerical_report.txt` |
+| V2 exact decomposition | T2 | `|e_rob−(e_nat+b)|=1.1e-16` (C and A) | ″ |
+| V3 Lipschitz certificate | T5a | bound holds ∀ε∈[0,0.3] | ″ + `figures/fig2` |
+| V4 separation | T3 | `Δ̂=0.282`, 95% CI [0.279,0.285], LB 0.218, d=5.37, p≈0 | ″ + `figures/fig1` |
+| V5 necessity | T4 | acc-only gap 0.00 vs `RC_{0.5}` gap 0.50 | ″ |
+| V6 certified radius | T5b | Cohen radii computed; `ε≤R ⇒ RC=1` | ″ |
+
+Key figures: `figures/fig1_separation_vs_lambda.png` (Δ vs λ with 0.15 line and
+CI), `figures/fig2_lipschitz_certificate.png` (E[RC] vs certified bound),
+`figures/fig3_monotonicity.png` (monotone decrease in ε).
+
+**Monte-Carlo separation (λ-sweep, n=20 000):**
+
+| λ | E[RC_acc] | E[RC_eth] | Δ |
+|---|---|---|---|
+| 0.0 | 0.300 | 0.824 | +0.524 |
+| 0.5 | 0.562 | 0.845 | **+0.282** |
+| 0.7 | 0.667 | 0.853 | +0.186 |
+| 1.0 | 0.825 | 0.865 | +0.041 |
+
+The separation is largest at `λ=0` (pure alignment) and shrinks toward `λ=1` (pure
+accuracy), exactly as Theorem 6 predicts, and stays `≥0.15` for all `λ ≲ 0.85`.
+
+---
+
+## 7. Discussion
+
+**Interpretation.** The hypothesis' headline number 0.15 is recovered *and
+explained*: `Δ` is driven almost entirely by the `(1−λ)` alignment channel, whose
+gain `γ_A=(1−d)−ā/a_min` is the difference between a *constrained* worst-case
+alignment `1−d` and a *collapsed* one `ā/a_min`. Accuracy-only evaluation (`λ=1`)
+sees only `Δ≈0.04` here — it is nearly blind to the very effect the hypothesis is
+about, which Theorem 4 makes exact. This is the concrete pay-off of a composite
+metric.
+
+**Relation to prior work.** T2 is the direct `RC_λ` analogue of TRADES'
+`R_rob=R_nat+R_bdy` (Zhang 2019). T3 imports CMDP/CPO feasibility (Achiam 2017) as
+the mechanism turning an ethical *training constraint* into an alignment-robustness
+*floor*, an implication absent from the literature (review §6). T4 is a
+composite-metric sharpening of the Tsipras (2018) "one number is not enough"
+message. T5 instantiates CLEVER (Weng 2018) and randomized smoothing (Cohen 2019)
+as certified lower bounds on `RC_λ`. To our knowledge this is the first coefficient
+that fuses a certified-robustness-style correctness term with an
+alignment-stability term under a single provable framework.
+
+**Astrophysics / cross-domain.** The domain enters *only* through the correctness
+score `C` (astrophysics-question correctness) and the alignment dimensions; all
+theorems are domain-agnostic in `C,A`. Hence the "cross-domain transfer" goal is
+immediate: relabel `C` for any scientific domain and T1–T6 hold verbatim — the
+framework generalizes by construction, with no re-derivation.
+
+---
+
+## 8. Limitations
+
+- **Modeling assumptions, not measurements.** (EC) and (CO) are *assumed*
+  constraint/collapse levels standing in for a trained-model experiment. The
+  planned empirical protocol (500-problem AstroEthicsBench, 6–8 LLMs, ANOVA) is
+  infeasible under the CPU-only / 1-hour constraint; our contribution is the
+  theorem that *would* explain such data and the exact conditions to test. The
+  Monte-Carlo study validates the algebra of the bounds, not real models.
+- **Discrete prompt perturbations.** T5's Lipschitz/smoothing certificates assume a
+  metric perturbation set; token-level prompt attacks (GCG) are discrete. A
+  rigorous discrete randomized-substitution smoothing analogue is left open.
+- **Worst-case minima.** `C̄,Ā` use exact minima over `B(x,ε)`; in practice these
+  are approximated by attacks (PGD/GCG), so measured `RC_λ` is an *upper* estimate.
+- **Constraint feasibility.** (EC) holds only up to CPO's `O(√δ)` per-update
+  violation; a fully end-to-end guarantee would need to propagate that slack into
+  `d`.
+- **Choice of `A` aggregation.** Collapsing five ethical dimensions into a single
+  `A∈[0,1]` is a modeling choice; a vector-valued `RC_λ` is a natural extension.
+
+---
+
+## 9. Open Questions
+
+1. **Discrete certificates.** A certified lower bound on `ρ_A` for token-substitution
+   balls (randomized-substitution smoothing) — closing the gap flagged in review §6.
+2. **Optimal constraint strength.** The HH `√KL`–reward law (Bai 2022) suggests
+   over-constraining hurts; characterize the `d` maximizing `E[RC_λ]` (a
+   regularity condition on reward over-optimization).
+3. **Tightening the trade-off coupling.** Replace the assumed `δ_C` by a *provable*
+   Tsipras-style bound on the correctness cost of a given alignment gain, yielding
+   an unconditional admissible-λ region.
+4. **Vector / certified composite.** A multi-dimensional `RC` (one term per ethical
+   dimension) with per-dimension certificates and a provable aggregation rule.
+
+---
+
+## 10. Conclusions
+
+We converted an informal empirical hypothesis into a **rigorous mathematical
+framework**. The composite ethical-robustness coefficient `RC_λ` is well-posed
+(T1), decomposes exactly in the TRADES style (T2), and — the central result — a
+training-time CMDP ethical constraint provably yields the separation
+`Δ ≥ (1−λ)[(1−d)−ā/a_min] − λδ_C`, which meets the hypothesis' `Δ≥0.15` on an
+explicit parameter region (T3, corollary; Monte-Carlo `Δ̂=0.282`, CI above 0.15).
+The composite is *necessary* — accuracy alone is provably blind to alignment
+collapse (T4) — and admits attack-independent certified lower bounds (T5), with the
+admissible weight region characterized in closed form (T6). All results are
+machine-verified. **Direct answer:** yes — ethically-constrained models are
+provably more ethically-robust under adversarial perturbation, by a margin that is
+a theorem, not just an observation, and that a single accuracy number cannot see.
+
+---
+
+## 11. References
+
+1. Zhang et al., *Theoretically Principled Trade-off between Robustness and
+   Accuracy (TRADES)*, arXiv:1901.08573, 2019.
+2. Weng et al., *Evaluating the Robustness of Neural Networks: An Extreme Value
+   Theory Approach (CLEVER)*, arXiv:1801.10578, 2018.
+3. Cohen et al., *Certified Adversarial Robustness via Randomized Smoothing*,
+   arXiv:1902.02918, 2019.
+4. Madry et al., *Towards Deep Learning Models Resistant to Adversarial Attacks*,
+   arXiv:1706.06083, 2017.
+5. Tsipras et al., *Robustness May Be at Odds with Accuracy*, arXiv:1805.12152, 2018.
+6. Goodfellow et al., *Explaining and Harnessing Adversarial Examples*,
+   arXiv:1412.6572, 2014.
+7. Bai et al., *Constitutional AI: Harmlessness from AI Feedback*, arXiv:2212.08073, 2022.
+8. Ouyang et al., *Training LMs to Follow Instructions with Human Feedback
+   (InstructGPT)*, arXiv:2203.02155, 2022.
+9. Bai et al., *Training a Helpful and Harmless Assistant with RLHF*,
+   arXiv:2204.05862, 2022.
+10. Zou et al., *Universal and Transferable Adversarial Attacks on Aligned LMs
+    (GCG)*, arXiv:2307.15043, 2023.
+11. Chao et al., *JailbreakBench*, arXiv:2404.01318, 2024.
+12. Achiam et al., *Constrained Policy Optimization (CPO)*, arXiv:1705.10528, 2017.
+13. Berner et al., *The Modern Mathematics of Deep Learning*, arXiv:2105.04026, 2021.
+
+**Tools:** Python 3.12, NumPy, SciPy, SymPy, Matplotlib. **Artifacts:**
+`definitions.md`, `planning.md`, `src/symbolic_checks.py`, `src/verify_theorems.py`,
+`results/`, `figures/`, `code/composite_robustness_metric.py`.
+</content>
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan — Mathematical Framework for Quantifying Ethical Robustness in Adversarial ML Systems
+
+## Motivation & Novelty Assessment
+
+### Why This Research Matters
+ML evaluation in scientific domains (astrophysics included) is dominated by a
+single scalar — accuracy — which is provably blind to the *ethical* failure modes
+(bias, integrity, transparency) that adversarial prompts induce. If a model can be
+made to answer correctly while its ethical alignment silently collapses, an
+accuracy-only report certifies it as safe. A mathematically rigorous, *composite*
+robustness coefficient that fuses correctness preservation with alignment stability
+is therefore a prerequisite for trustworthy scientific ML.
+
+### Gap in Existing Work
+From `literature_review.md`: correctness-robustness metrics (CLEVER — Weng 2018;
+certified radius — Cohen 2019; TRADES decomposition — Zhang 2019) quantify only
+**scientific correctness** under perturbation. Alignment metrics (ASR /
+JailbreakBench — Chao 2024) quantify only **ethical alignment**. **No prior work
+fuses them into a single coefficient with provable properties.** Likewise, no
+theorem connects a *training-time ethical constraint* (CMDP / CPO — Achiam 2017;
+Constitutional AI — Bai 2022) to a *lower bound* on such a coefficient.
+
+### Our Novel Contribution
+We (1) formalize the composite ethical-robustness coefficient `RC_λ` (Def. 2.9 of
+the literature review), (2) prove its basic analytic properties (bounds,
+monotonicity, an exact TRADES-style additive decomposition), (3) prove the
+**central theorem**: a training-time alignment constraint of CMDP type yields a
+lower bound on `E[RC_λ]` and a *provable separation* `Δ = E[RC_λ^{eth}] −
+E[RC_λ^{acc}] ≥ 0.15` under explicit, checkable hypotheses, (4) prove that the
+composite is **necessary** — any accuracy-only metric is provably blind to
+alignment collapse (Tsipras-style hard instance), and (5) give an
+attack-independent **Lipschitz/certified lower bound** on `RC_λ`. All results are
+verified computationally (symbolic + Monte-Carlo + statistical).
+
+### Experiment (Computational Verification) Justification
+- **V1 — Bounds & monotonicity:** confirm Theorem 1 (`RC_λ∈[0,1]`, non-increasing
+  in ε) on randomized inputs and nested perturbation sets. *Why:* catches sign /
+  clipping errors in the definition.
+- **V2 — Exact decomposition:** confirm the identity `E[1−C̄]=E[1−C]+E[C−C̄]`
+  (Theorem 2) to machine precision. *Why:* the additive template is the backbone.
+- **V3 — Lipschitz certificate:** confirm `RC_λ ≥ 1−ε(λL_C/c_min+(1−λ)L_A/a_min)`
+  (Theorem 5) on a Lipschitz synthetic model. *Why:* validates the
+  attack-independent bound.
+- **V4 — Main separation:** Monte-Carlo estimate of `Δ` over λ with bootstrap 95%
+  CI, and check the *theoretical* lower bound of Theorem 3 is respected. *Why:*
+  directly tests the hypothesis' `Δ≥0.15` claim and the theorem's constants.
+- **V5 — Necessity:** exhibit two models with identical accuracy behavior but
+  different `RC_λ` (Theorem 4). *Why:* demonstrates accuracy-only insufficiency.
+- **V6 — Certified radius arithmetic:** evaluate Cohen's `R=(σ/2)(Φ⁻¹(p_A)−Φ⁻¹(p_B))`
+  to instantiate a fully-certified `RC_λ=1` regime. *Why:* connects abstract metric
+  to a concrete computable certificate.
+- **V7 — Symbolic:** `sympy` proof-checking of the decomposition identity and the
+  `Δ` inequality. *Why:* removes algebra risk from the proofs.
+
+## Research Question
+Can the informal hypothesis — "ethically-constrained models are ≥0.15 more robust
+than accuracy-only models under adversarial prompts, quantifiable by a composite
+metric" — be turned into a *theorem*: a precisely-defined coefficient `RC_λ` with
+provable bounds, and explicit sufficient conditions under which a training-time
+ethical constraint guarantees `Δ = E[RC_λ^{eth}] − E[RC_λ^{acc}] ≥ 0.15`?
+
+## Hypothesis Decomposition
+1. **H1 (well-posedness):** `RC_λ` is a well-defined robustness coefficient
+   (bounded in `[0,1]`, monotone in ε, correct ε=0 limit).
+2. **H2 (structure):** `RC_λ`'s deficit decomposes additively into correctness- and
+   alignment-stability terms (TRADES analogue).
+3. **H3 (separation, main):** a CMDP alignment constraint `E[1−Ā]≤d` on the ethical
+   model, plus a bounded correctness cost `δ_C`, forces `Δ ≥ (1−λ)[(1−d)−ā/a_min] −
+   λδ_C`, hence `≥0.15` for an explicit parameter region.
+4. **H4 (necessity):** no function of correctness alone can reproduce `RC_λ`
+   (λ<1); accuracy-only evaluation is provably blind to alignment collapse.
+5. **H5 (certifiability):** `RC_λ` admits attack-independent Lipschitz and
+   randomized-smoothing lower bounds.
+
+Independent variable: training regime (ethical-constrained vs accuracy-only),
+weight λ, perturbation radius ε, constraint level d. Dependent variable: `RC_λ`
+and `Δ`.
+
+## Proposed Methodology
+
+### Approach
+Pure/applied mathematics: definitions → lemmas → theorems, following the TRADES
+proof template (exact decomposition + calibrated bound) recommended by the
+literature review, with CMDP constraint analysis (CPO) for the separation theorem
+and a Tsipras-style hard-instance construction for necessity. Every algebraic step
+is cross-checked with `sympy`; every quantitative claim with `numpy`/`scipy`.
+
+### Experimental Steps
+1. Fix definitions/notation (`definitions.md`), reusing Def. 2.1–2.9 of the review.
+2. Prove Theorem 1 (bounds/monotonicity) — direct.
+3. Prove Theorem 2 (exact decomposition + normalized bound) — TRADES template.
+4. Prove Theorem 3 (constraint ⇒ separation `Δ≥0.15`) — CMDP expected-cost bound.
+5. Prove Theorem 4 (necessity) — explicit two-model construction.
+6. Prove Theorem 5 (Lipschitz + certified lower bounds) — mean-value + Cohen.
+7. Prove Theorem 6 (admissible-λ trade-off region) — corollary of Thm 3.
+8. Verify V1–V7 computationally; save to `results/`.
+
+### Baselines
+Comparison is against the existing single-term metrics (correctness-only:
+CLEVER/certified radius; alignment-only: `1−ASR`) — our composite must (a) reduce
+to each at λ∈{1,0} and (b) strictly dominate them in discriminating power
+(Theorem 4).
+
+### Evaluation Metrics
+Symbolic identity checks (exact); Monte-Carlo `E[RC_λ]` with bootstrap 95% CI;
+respected-lower-bound checks for each theorem; one-sided test that `Δ≥0.15`.
+
+### Statistical Analysis Plan
+Monte-Carlo with fixed seed (42), n=20000 inputs; bootstrap (10000 resamples) 95%
+CI for `Δ`; one-sided test `H₀: Δ=0.15` vs `H₁: Δ>0.15` at α=0.05. Report effect
+size (Cohen's d on per-input `RC_λ` difference where paired).
+
+## Expected Outcomes
+Theorems 1–6 proved; V1–V7 confirm every inequality; Monte-Carlo `Δ≈0.28` with CI
+strictly above 0.15 in the modeled regime; necessity demonstrated exactly.
+
+## Timeline and Milestones
+- Definitions + Thm 1–2: 15 min
+- Thm 3–6: 20 min
+- Verification scripts V1–V7 + runs: 15 min
+- REPORT.md + README.md: 10 min
+
+## Potential Challenges
+- **Discrete prompt perturbations** break continuous-Lipschitz certification →
+  handle by keeping the perturbation set abstract (any nested family) and flagging
+  discrete smoothing as an open problem.
+- **Accuracy–robustness coupling** (Tsipras) may make raising ρ_A cost ρ_C →
+  Theorem 6 bounds this and gives the admissible λ region.
+- **CPO bounds expectations, not a.s. floors** → phrase Theorem 3 entirely in
+  expectations (matches `E[1−Ā]≤d`).
+
+## Success Criteria
+All six theorems have complete, gap-free proofs; all computational checks pass;
+`REPORT.md` states the separation theorem with explicit constants and a verified
+parameter region achieving `Δ≥0.15`.
+</content>
+</invoke>
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review
+
+**Project:** Mathematical Framework for Quantifying Ethical Robustness in Adversarial Astrophysics ML Systems
+
+**Hypothesis under investigation:** ML models trained with explicit ethical
+constraints exhibit measurably higher robustness coefficients (≥ 0.15 improvement)
+under adversarial prompts than accuracy-only models, and this robustness can be
+formally quantified by a *composite metric* combining scientific-correctness
+preservation and ethical-alignment stability under adversarial perturbation.
+
+---
+
+## 1. Research Area Overview
+
+The hypothesis sits at the intersection of three mathematically-mature areas:
+
+1. **Adversarial robustness theory** — formal definitions of robustness, min-max
+   (saddle-point) robust optimization, and *quantitative* robustness metrics
+   (certified radii, Lipschitz-based scores). This supplies the machinery for a
+   rigorous "robustness coefficient."
+2. **The robustness–accuracy trade-off** — provable tension between clean
+   accuracy and adversarial robustness, and additive decompositions of robust
+   error. This motivates why a *composite* (multi-term) metric is the right
+   object, and gives the decomposition template.
+3. **Alignment / constrained training** — RLHF, Constitutional AI, and
+   constrained-MDP optimization, which operationalize "explicit ethical
+   constraints during training," plus adversarial-prompt threat models (GCG,
+   JailbreakBench) that define what "adversarial astrophysics prompts" concretely
+   means and how to score alignment stability.
+
+The "astrophysics" framing specializes the *scientific-correctness* term
+`C(f,x)` to correctness on astrophysics questions; the mathematics is
+domain-agnostic (any measurable correctness score works). No prior work was found
+that combines a certified-robustness-style scalar with an alignment-stability
+term into a single composite coefficient — this is the gap the project targets.
+
+---
+
+## 2. Key Definitions
+
+Notation: `f` a model/classifier; `x` an input (prompt); `y` a ground-truth label
+or reference; `B_p(x, ε) = {x' : ||x'−x||_p ≤ ε}` the adversarial perturbation set
+(for LLMs, an abstract set of allowed adversarial prompts, e.g. GCG suffixes).
+
+**Def. 2.1 (Standard / natural error).** `R_nat(f) = E_{(x,y)}[ 1{f(x) ≠ y} ]`.
+
+**Def. 2.2 (Robust / adversarial error).**
+`R_rob(f) = E_{(x,y)}[ max_{x' ∈ B_p(x,ε)} 1{f(x') ≠ y} ]`.
+Robust accuracy `= 1 − R_rob(f)`.
+
+**Def. 2.3 (Boundary error, TRADES).** With decision boundary
+`DB(f) = {x : f(x) = 0}` (binary score `f`, label `y∈{−1,+1}`),
+`R_bdy(f) = E[ 1{ X ∈ B(DB(f), ε),  f(X)Y > 0 } ]` —
+inputs correctly classified but within `ε` of the decision boundary.
+
+**Def. 2.4 (Minimum adversarial distortion / robustness radius).**
+`r(f,x) = min{ ||δ||_p : f(x+δ) ≠ f(x) }`; the *pointwise* robustness of `f` at `x`.
+A robustness metric estimates or lower-bounds `r(f,x)`.
+
+**Def. 2.5 (Certified radius, randomized smoothing).** For the smoothed classifier
+`g(x) = argmax_c P_{η∼N(0,σ²I)}[ f(x+η) = c ]`, `g` is *certified* robust at `x`
+within radius `R` (Def. 2.4 with `p=2`) — see Theorem 3.3.
+
+**Def. 2.6 (CLEVER score).** An attack-independent estimate of a *lower bound* on
+`r(f,x)` built from the local Lipschitz constant of class-margin functions
+(Theorem 3.2).
+
+**Def. 2.7 (Attack Success Rate, ASR).** For a judge `JUDGE`, target model `LLM`,
+and harmful goal `G`: `ASR = (1/n) Σ 1{ JUDGE(LLM(P_i), G_i) = True }` over `n`
+adversarial prompts `P_i`. Alignment robustness `= 1 − ASR`. (JailbreakBench.)
+
+**Def. 2.8 (Constrained MDP feasible set).**
+`Π_C = { π : J_{C_i}(π) ≤ d_i ∀ i }`, where
+`J_{C_i}(π) = E_{τ∼π}[ Σ_t γ^t C_i(s_t,a_t,s_{t+1}) ]` is the expected discounted
+cost. Constrained training solves `max_{π∈Π_C} J(π)`. (Achiam et al.)
+
+**Def. 2.9 (Proposed composite ethical-robustness coefficient).** With per-input
+correctness `C(f,x)∈[0,1]`, alignment `A(f,x)∈[0,1]`, worst-case values
+`C̄ = min_{x'∈B_p(x,ε)} C(f,x')`, `Ā = min_{x'∈B_p(x,ε)} A(f,x')`, define
+component robustness `ρ_C = C̄ / max(C, τ)`, `ρ_A = Ā / max(A, τ)` (clipped to
+`[0,1]`), and the composite
+`RC_λ(f,x,ε) = λ·ρ_C + (1−λ)·ρ_A`, `λ∈[0,1]`.
+The hypothesis is `E_x[RC_λ(f_eth,·,ε)] − E_x[RC_λ(f_acc,·,ε)] ≥ 0.15`.
+(This project's proposed object; see `code/composite_robustness_metric.py`.)
+
+---
+
+## 3. Key Papers and Prior Results
+
+### Group A — Formal robustness metrics (mathematical backbone)
+
+#### Theorem 3.1 (TRADES: exact decomposition + calibrated upper bound) — Zhang et al. 2019 (arXiv:1901.08573)
+**Exact decomposition (equality):**
+> `R_rob(f) = R_nat(f) + R_bdy(f)`  (Defs. 2.1–2.3).
+
+**Theorem 3.1 (upper bound).** Under **Assumption 1** (the surrogate `φ` is
+*classification-calibrated*, `H⁻(η) > H(η)` for all `η ≠ 1/2`), for any non-negative
+`φ` with `φ(0) ≥ 1`, any measurable `f`, any distribution, and any `λ > 0`:
+> `R_rob(f) − R*_nat ≤ ψ⁻¹( R_φ(f) − R*_φ ) + E[ max_{X'∈B(X,ε)} φ( f(X')f(X)/λ ) ]`,
+where `ψ = ψ̃**` is the convexified Bartlett–Jordan–McAuliffe transform. **Theorem 3.2**
+shows this bound is *tight* (matching lower bound up to `ξ>0`) when additionally
+`lim_{x→+∞} φ(x) = 0`. The TRADES objective minimizes a surrogate of exactly this
+bound: `min_f E[ L(f(X),Y) + (1/λ)·max_{X'∈B(X,ε)} L(f(X), f(X')) ]` — first term
+controls natural error (accuracy), second (regularizer) controls the boundary term
+(stability).
+- **Proof technique:** use the *exact decomposition*, bound the natural-excess term
+  via the calibration inequality `R_nat − R*_nat ≤ ψ⁻¹(R_φ − R*_φ)`, and bound the
+  boundary term by a surrogate of the "close-to-boundary" indicator.
+- **Relevance:** the *additive decomposition* (accuracy term + stability term) is
+  the direct template for the composite metric `RC_λ`: correctness preservation
+  `ρ_C` plays the role of the natural-accuracy term, alignment stability `ρ_A`
+  the role of the boundary/stability term.
+
+#### Theorem 3.2 (CLEVER lower bound via local Lipschitz constant) — Weng et al. 2018 (arXiv:1801.10578)
+Let `g` be a classifier with class outputs `g_c`, true class `c`. If, for all
+`x' ∈ B_p(x₀, R)`, the function `g_c − g_j` has local Lipschitz constant `L_q^j`
+(with `1/p + 1/q = 1`), then the minimum `ℓ_p` distortion to change the prediction
+away from `c` satisfies
+> `r(g, x₀) ≥ min_{j≠c} (g_c(x₀) − g_j(x₀)) / L_q^j`.
+CLEVER estimates `L_q^j` by sampling gradient norms `||∇(g_c−g_j)(x')||_q` over
+`x' ∈ B_p(x₀,R)` and fitting a **reverse Weibull distribution** (extreme value
+theory) to estimate their supremum; the CLEVER score is the resulting lower bound.
+- **Proof technique:** mean-value / Lipschitz-continuity bound on the margin
+  function; extreme-value-theory (Fisher–Tippett) estimation of the max gradient
+  norm.
+- **Relevance:** provides an **attack-independent, scalar** robustness value — the
+  archetype for a "robustness coefficient" that can be computed without a specific
+  attack, and generalizable from correctness margins to alignment margins.
+
+#### Theorem 3.3 (Certified radius, randomized smoothing) — Cohen et al. 2019 (arXiv:1902.02918)
+Let `f` be any base classifier and `g` its Gaussian smoothing (Def. 2.5). Suppose
+that at input `x`, the top class `c_A` and runner-up satisfy
+`P(f(x+η)=c_A) ≥ p_A ≥ p_B ≥ max_{c≠c_A} P(f(x+η)=c)`. Then
+`g(x+δ) = c_A` for all `||δ||_2 < R`, where
+> `R = (σ/2)·( Φ⁻¹(p_A) − Φ⁻¹(p_B) )`,
+with `Φ` the standard-normal CDF. The bound is tight for `ℓ_2`.
+- **Proof technique:** Neyman–Pearson lemma — the worst-case base classifier
+  consistent with the class probabilities is a linear half-space, whose smoothed
+  decision changes exactly at the stated radius.
+- **Relevance:** a *closed-form, certified* robustness value with a probabilistic
+  guarantee — a rigorously-defensible term to plug into a composite coefficient
+  and a model for how to certify (rather than merely estimate) the `ρ_C`, `ρ_A`
+  components.
+
+### Group B — Adversarial-robustness foundations
+
+#### Def./Framework 3.4 (Saddle-point robust optimization) — Madry et al. 2017 (arXiv:1706.06083)
+Adversarial training is cast as the min-max problem
+> `min_θ ρ(θ),  ρ(θ) = E_{(x,y)∼D}[ max_{δ∈S} L(θ, x+δ, y) ]`,
+with perturbation set `S` (typically an `ℓ_∞` ball). The inner max is
+(approximately) solved by **projected gradient descent (PGD)**:
+`x^{t+1} = Π_{x+S}( x^t + α·sign(∇_x L(θ, x^t, y)) )`, a "universal first-order
+adversary" (loss from many random restarts concentrates; gradient steps on the
+inner-max value are justified by **Danskin's theorem**). Robustness is reported as
+accuracy under PGD (empirically MNIST > 89%, CIFAR-10 ~46% robust accuracy; robust
+training demands higher model capacity).
+- **Relevance:** gives the canonical *formal definition* of robustness against a
+  perturbation set and the min-max objective that any "robustness coefficient"
+  quantifies. `RC_λ`'s worst-case `min_{x'∈B}` mirrors the inner maximization.
+
+#### Result 3.5 (Robustness may be at odds with accuracy) — Tsipras et al. 2018 (arXiv:1805.12152)
+On a constructed distribution with one strongly-correlated "robust" feature `x₁`
+(`x₁ = +y` w.p. `p`, e.g. `p = 0.95`) and `d` weakly-correlated features
+`x_i ∼ N(η·y, 1)` with small `η ∝ 1/√d`, there is a **provable trade-off**
+(persisting with infinite data): a standard classifier averaging the weak features
+attains standard accuracy ≥ 99%, but an `ℓ_∞` adversary with `ε = 2η` flips the mean
+of every weak feature, driving the standard classifier's robust accuracy below
+chance (≤ 1%). *Any* robust classifier must instead rely on `x₁` alone, capping its
+standard accuracy at `p`. Standard and robust accuracy cannot both approach 1.
+- **Proof technique:** explicit distribution + adversary construction; the weak
+  features become anti-correlated with `y` after an `ε`-perturbation.
+- **Relevance:** formal justification that a *single* accuracy number is
+  insufficient — a composite metric with separate clean and worst-case terms
+  (as in `RC_λ`) is mathematically necessary to capture the trade-off.
+
+#### Def. 3.6 (FGSM; linear view) — Goodfellow et al. 2014 (arXiv:1412.6572)
+The **Fast Gradient Sign Method** perturbation is
+`η = ε·sign(∇_x J(θ, x, y))`, yielding adversarial example `x + η`. The paper's
+"linear explanation": for a linear model `w^T(x+η) = w^Tx + ε·||w||_1`, the
+perturbation's effect grows with input dimension, so high-dimensional models are
+generically vulnerable; adversarial examples arise from *too much linearity*, not
+overfitting.
+- **Relevance:** foundational, cheap adversarial construction; the `sign`-gradient
+  step reappears in PGD (3.4) and motivates gradient-based prompt attacks (GCG).
+
+### Group C — Ethical constraints during training (alignment)
+
+#### Framework 3.7 (RLHF objective) — Ouyang et al. 2022, InstructGPT (arXiv:2203.02155)
+Three stages: (1) SFT; (2) reward model `r_θ` trained on human rankings with the
+pairwise loss
+`−E_{(x,y_w,y_l)}[ log σ( r_θ(x,y_w) − r_θ(x,y_l) ) ]`; (3) PPO against `r_θ` with
+a per-token KL penalty. The **PPO-ptx objective**:
+> `E_{(x,y)∼π^RL_φ}[ r_θ(x,y) − β·log( π^RL_φ(y|x) / π^SFT(y|x) ) ] + γ·E_{x∼D_pre}[ log π^RL_φ(x) ]`.
+`β` controls KL drift from the SFT policy; `γ` mixes in pretraining gradients to
+reduce the "alignment tax." 1.3B InstructGPT outputs are preferred to 175B GPT-3.
+- **Relevance:** the mechanism for injecting alignment objectives; the KL term is a
+  *soft constraint* on drift — a candidate stability regularizer for `ρ_A`.
+
+#### Framework 3.8 (Constitutional AI / RLAIF) — Bai et al. 2022 (arXiv:2212.08073)
+Trains harmlessness from a written **constitution** (~16 natural-language
+principles) with no human harm labels: (1) **SL-CAI** — self-critique-and-revise
+responses using sampled critique/revision principles, then SFT on revisions;
+(2) **RL-CAI (RLAIF)** — an AI feedback model, steered by sampled principles,
+produces preference labels, a preference model is trained on them, and standard
+RLHF/PPO optimizes against it. Yields a **Pareto improvement**: less harmful at a
+given helpfulness than HH-RLHF, and non-evasive.
+- **Relevance:** the paper that most *explicitly* operationalizes "ethical
+  constraints during training" — the constitution is the concrete ethical
+  constraint; principle-ensembling is a robustness mechanism.
+
+#### Framework 3.9 (Helpful & Harmless RLHF) — Bai et al. 2022 (arXiv:2204.05862)
+Preference-model + PPO RLHF with *separate* helpfulness and harmlessness
+(red-teaming) datasets; reward `r_total = r_PM − λ_KL·D_KL(π ‖ π₀)` (`λ_KL≈0.001`).
+Documents an approximately **linear relation between PPO reward and √KL(π‖π₀)** and
+train-vs-test preference-model divergence under over-optimization (reward hacking).
+Explicit **helpfulness–harmlessness tension** (a two-objective analogue of
+correctness vs alignment).
+- **Relevance:** the `√KL`–reward law and train/test PM divergence give concrete,
+  reusable measures of *alignment stability / over-optimization under adversarial
+  inputs*.
+
+### Group D — Adversarial prompts & constrained training
+
+#### Method 3.10 (GCG adversarial suffixes) — Zou et al. 2023 (arXiv:2307.15043)
+Appends an optimized suffix at indices `I` to coerce an affirmative target
+`x*_{n+1:n+H}`; objective `L(x_{1:n}) = −log p(x*_{n+1:n+H} | x_{1:n})`, minimized
+over discrete tokens by **Greedy Coordinate Gradient**: rank candidate token
+swaps per position by the one-hot embedding gradient `−∇_{e_{x_i}} L`, sample `B`
+candidates across all positions, evaluate exactly, keep the best. Universal/
+transferable across prompts and models. ASR up to 84% on GPT-3.5/4, 66% PaLM-2.
+- **Relevance:** the canonical *optimization-based adversarial-prompt* threat model
+  — concretely defines `B_p(x,ε)` for LLMs and argues post-hoc alignment is fragile
+  (motivating training-time robustness).
+
+#### Benchmark 3.11 (JailbreakBench) — Chao et al. 2024 (arXiv:2404.01318)
+Formalizes jailbreaking as: find prompt `P` s.t. `JUDGE(LLM(P), G) = True`, and
+measures **ASR** over 100 standardized harmful behaviors with a fixed judge
+(Llama-3-70B, chosen empirically for highest human agreement). Standardizes threat
+model, templates, and scoring; hosts attack + defense leaderboards.
+- **Relevance:** the standardized, reproducible *robustness metric* (`1 − ASR`)
+  for the alignment-stability term.
+
+#### Framework 3.12 (Constrained Policy Optimization) — Achiam et al. 2017 (arXiv:1705.10528)
+Solves the CMDP `max_{π∈Π_C} J(π)` (Def. 2.8) via a trust-region update: maximize
+the advantage surrogate subject to a *linearized* cost constraint
+`J_{C_i}(π_k) + (1/(1−γ))·E[A^{π_k}_{C_i}] ≤ d_i` and KL trust region
+`D̄_KL(π‖π_k) ≤ δ`. **Proposition 2** bounds the worst-case per-update violation:
+`J_{C_i}(π_{k+1}) ≤ d_i + √(2δ)·γ·ε^{π_{k+1}}_{C_i} / (1−γ)²`.
+- **Relevance:** the mathematical template for **constrained training as a
+  robustness mechanism** — cast an ethical requirement as an expected-cost
+  constraint `J_C(π) ≤ d` with per-iteration satisfaction guarantees.
+
+#### Survey 3.13 (Modern Mathematics of Deep Learning) — Berner et al. 2021 (arXiv:2105.04026)
+Provides rigorous scaffolding: ERM/statistical learning theory; **Rademacher-
+complexity** generalization bounds tightened via weight-matrix spectral norms
+combined with a **margin** `M(f,z) = y·f(x)` (larger margin ⇒ better
+generalization); and the **flatness–robustness** link (robustness of loss to
+parameter perturbations correlates with generalization).
+- **Relevance:** margin/Rademacher bounds and the flatness–robustness connection
+  give formal footing to metrics linking training-time regularity to
+  adversarial-prompt resilience.
+
+---
+
+## 4. Prerequisite Theorems (citable building blocks)
+
+| Result | Source | Statement (summary) | Use in our work |
+|--------|--------|---------------------|-----------------|
+| Robust-error decomposition | Zhang 2019 | exact: `R_rob = R_nat + R_bdy`; calibrated bound (Thm 3.1) | Template + rigor for additive composite metric |
+| Certified radius | Cohen 2019 | `R = (σ/2)(Φ⁻¹(p_A) − Φ⁻¹(p_B))` | Closed-form certified `ρ` component |
+| Lipschitz margin bound | Weng 2018 | `r ≥ min_j (g_c−g_j)/L_q^j` | Attack-independent robustness coefficient |
+| Saddle-point robustness | Madry 2017 | `min_θ E[max_δ L]` | Formal def. of worst-case (the `min_{x'∈B}`) |
+| Accuracy–robustness trade-off | Tsipras 2018 | Provable trade-off on constructed dist. | Justifies multi-term (composite) metric |
+| CMDP violation bound | Achiam 2017 | `J_C(π_{k+1}) ≤ d + O(√δ)` | Constrained-training guarantee |
+| Margin generalization | Berner 2021 | Rademacher/margin bound | Links regularity ↔ robustness |
+
+---
+
+## 5. Proof Techniques in the Literature
+
+- **Classification-calibrated surrogate-loss analysis** (TRADES): relate
+  0-1 robust error to a differentiable surrogate; decompose into interpretable
+  terms. → Directly reusable to prove properties of `RC_λ`.
+- **Neyman–Pearson / worst-case linear classifier** (randomized smoothing): to get
+  a *tight* certificate, identify the adversary-worst base classifier. → Template
+  for certifying `ρ_C`, `ρ_A` lower bounds.
+- **Extreme value theory (reverse Weibull)** (CLEVER): estimate a supremum
+  (Lipschitz constant) from samples. → Estimator for worst-case terms without an
+  explicit attack.
+- **Explicit hard-instance construction** (Tsipras): build a distribution
+  witnessing a trade-off / impossibility. → To prove *tightness* or necessity of a
+  composite (single number is insufficient).
+- **Trust-region linearization + surrogate bounds** (CPO): convert a hard
+  constrained problem into a per-step solvable one with guarantees. → For any
+  "train with an ethics constraint" theorem.
+- **Convex-combination / KL-regularization** (RLHF, HH): soft constraints via KL
+  penalties; the `√KL`–reward law. → Stability regularizer for `ρ_A`.
+
+---
+
+## 6. Related Open Problems / Gaps
+
+- **No unified composite metric.** Robustness metrics (CLEVER, certified radius)
+  quantify *correctness* robustness; ASR quantifies *alignment* robustness. No
+  prior work fuses them into one coefficient with provable properties — the
+  central gap this project fills.
+- **Certification for discrete prompt perturbations.** Randomized smoothing and
+  CLEVER assume continuous `ℓ_p` inputs; adversarial prompts are discrete tokens
+  (GCG). Extending certificates to the prompt setting is open.
+- **Does a training-time ethical constraint provably raise a robustness
+  coefficient?** The hypothesis' `Δ ≥ 0.15` is empirical; a theorem connecting a
+  CPO-style constraint `J_C(π) ≤ d` (or a CAI constitution) to a lower bound on
+  `E[RC_λ]` is not in the literature.
+- **Reward over-optimization vs robustness.** The HH `√KL`–reward law suggests
+  alignment stability degrades past an over-optimization threshold; formalizing the
+  optimal KL/constraint strength for maximal `RC_λ` is open.
+
+---
+
+## 7. Recommendations for Proof Strategy
+
+- **Recommended approach:** Define `RC_λ` (Def. 2.9) and *prove an additive
+  decomposition/bound* in the style of TRADES Theorem 3.1, i.e. bound
+  `1 − E[RC_λ]` by a clean-error term plus separate correctness- and
+  alignment-boundary terms. This inherits a proven proof pattern.
+- **Key lemmas to establish:**
+  1. **Well-definedness / bounds:** `RC_λ ∈ [0,1]`, monotone in `ε`
+     (worst-case terms shrink as `ε` grows) — straightforward from Def. 2.9.
+  2. **Certifiable lower bound** on each component via smoothing (Thm 3.3) or a
+     Lipschitz margin (Thm 3.2), giving a *certified* `RC_λ`.
+  3. **Constraint ⇒ robustness gain:** model ethical training as a CMDP constraint
+     `J_C(π) ≤ d` (Def. 2.8 / CPO) and show it lower-bounds the alignment term `ρ_A`,
+     hence `E[RC_λ]`, yielding the `Δ ≥ 0.15` separation under stated assumptions.
+- **Potential obstacles:** (i) discrete prompt perturbations break continuous-Lipschitz
+  certification — may need a discrete/randomized-substitution smoothing analogue;
+  (ii) the Tsipras trade-off warns that raising `ρ_A` may cost `ρ_C` — the theorem
+  must bound this coupling (choose `λ` and constraint level `d` to guarantee a net
+  gain); (iii) reward over-optimization (HH) can *reduce* robustness, so any bound
+  needs a KL/constraint-strength regularity condition.
+- **Computational support:** use `code/composite_robustness_metric.py` for
+  Monte-Carlo verification of candidate bounds; `sympy` for symbolic checking of
+  the decomposition inequality; `scipy.stats.norm` for the `Φ`/`Φ⁻¹`
+  certified-radius arithmetic.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete mathematics paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey the main result or the mathematical objects studied
+   - Mathematical convention: concise and precise
+
+2. AUTHOR
+   - Use this exact author line: NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - State the problem or question investigated
+   - Summarize the main results (theorem statements in words)
+   - Mention proof techniques used
+   - Note any computational verification
+
+4. INTRODUCTION
+   - Mathematical problem and motivation
+   - History and context of the problem
+   - Summary of known results (with citations)
+   - Statement of main contributions (informal preview)
+   - Paper organization
+
+5. PRELIMINARIES
+   - Notation and conventions
+   - Definitions needed for the paper
+   - Prerequisite results (stated with citations, not reproved)
+   - This section ensures the paper is self-contained
+
+6. MAIN RESULTS
+   - Formal theorem statements
+   - Complete proofs
+   - Supporting lemmas and propositions with proofs
+   - Examples illustrating the results
+   - Remarks connecting to other areas
+
+7. DISCUSSION
+   - Implications of the results
+   - Connections to related problems
+   - Open questions and conjectures
+   - Possible generalizations
+
+8. CONCLUSION
+   - Summary of contributions
+   - Future directions
+
+9. REFERENCES
+   - BibTeX format
+   - All cited papers and textbooks
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── preliminaries.tex # Definitions, notation, prerequisites
+│   ├── main_results.tex  # Theorems and proofs
+│   ├── discussion.tex    # Discussion and open questions
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/appendix)
+2. Write main.tex using the AMS document class with proper theorem environments:
+
+   \documentclass{amsart}
+   \usepackage{amsmath,amssymb,amsthm}
+   \usepackage[hidelinks]{hyperref}
+   \usepackage{graphicx}
+   \usepackage{enumitem}
+
+   % Theorem environments
+   \newtheorem{theorem}{Theorem}[section]
+   \newtheorem{lemma}[theorem]{Lemma}
+   \newtheorem{proposition}[theorem]{Proposition}
+   \newtheorem{corollary}[theorem]{Corollary}
+   \newtheorem{conjecture}[theorem]{Conjecture}
+
+   \theoremstyle{definition}
+   \newtheorem{definition}[theorem]{Definition}
+   \newtheorem{example}[theorem]{Example}
+
+   \theoremstyle{remark}
+   \newtheorem{remark}[theorem]{Remark}
+
+   % Import command files (if they exist)
+   \InputIfFileExists{commands/math}{}{}
+   \InputIfFileExists{commands/general}{}{}
+   \InputIfFileExists{commands/macros}{}{}
+
+   % Bibliography style
+   \bibliographystyle{amsplain}
+
+   \author{NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+NOTE ON DOCUMENT CLASS:
+- Use \documentclass{amsart} (NOT \documentclass{article} with \usepackage{style})
+- The amsart class is part of the standard LaTeX distribution — no .sty file needed
+- It provides proper formatting for mathematical papers: theorem numbering,
+  proof environments, AMS math fonts, and standard math journal layout
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic mathematical tone throughout
+- Every theorem must have a complete proof
+- All definitions must be precise and unambiguous
+- Proper citations using \cite{} commands
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                       MATHEMATICAL WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these conventions for mathematical papers:
+
+1. LANGUAGE STYLE:
+   - Use "we" for collaborative exposition: "We prove", "We show", "We define"
+   - Be precise and direct: state results clearly before proving them
+   - Prefer plain language: "We now prove..." over "We shall henceforth demonstrate..."
+   - Use the present tense for mathematical facts: "Theorem 1 shows..."
+   - Avoid vague language: instead of "clearly" or "obviously", explain why
+
+2. INTRODUCTION STRUCTURE:
+   - Context and motivation (why this problem matters)
+   - History (what's known, with citations)
+   - Statement of results (informal but precise)
+   - Proof techniques (brief overview of methods)
+   - Paper organization (roadmap)
+
+3. THEOREM ENVIRONMENTS:
+   Use proper LaTeX theorem environments:
+   \begin{theorem}\label{thm:main}
+     Let $G$ be a graph with $n$ vertices. Then...
+   \end{theorem}
+
+   \begin{proof}
+     We proceed by induction on $n$. ...
+   \end{proof}
+
+4. DEFINITIONS:
+   \begin{definition}\label{def:widget}
+     A \emph{widget} is a pair $(X, \tau)$ where...
+   \end{definition}
+
+   - Italicize the term being defined using \emph{}
+   - State all conditions explicitly
+   - Give examples immediately after non-trivial definitions
+
+5. PROOF STRUCTURE:
+   - Begin with proof strategy: "The proof proceeds in two steps..."
+   - Number or label key claims within proofs
+   - Use \qedhere for proofs ending in displayed equations
+   - Signal transitions: "It remains to show...", "We now verify..."
+
+6. NOTATION CONVENTIONS:
+   - Define all notation in Preliminaries
+   - Use standard notation: $\mathbb{R}$, $\mathbb{Z}$, $\mathbb{N}$
+   - Use \coloneqq or := for definitions
+   - Be consistent: one symbol = one meaning throughout
+
+7. MATHEMATICAL FORMATTING:
+   - Displayed equations for important formulas: \[ ... \]
+   - Inline math for brief expressions: $...$
+   - Use align environment for multi-line equations
+   - Number only equations that are referenced later
+
+8. REFERENCES AND CITATIONS:
+   - Cite prior results when used: "By \cite{author2024}..."
+   - Distinguish between "Theorem 3 of \cite{...}" and your own results
+   - Include both classic references and recent work
+
+9. EXAMPLES AND COUNTEREXAMPLES:
+   - Illustrate each major result with a concrete example
+   - Show tightness: counterexamples demonstrating necessity of hypotheses
+   - Use \begin{example} ... \end{example} environment
+
+10. FIGURES (if applicable):
+    - Diagrams for geometric arguments
+    - Graphs or plots from computational verification
+    - Commutative diagrams for algebraic results
+    - Use TikZ or include pre-generated figures
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .claude/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Skim paper_draft/example_paper.tex for amsart LaTeX conventions only
+   - Browse paper_examples/ for language patterns (if available)
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   MATHEMATICAL CONTENT CHECK:
+   - [ ] Every theorem has a complete, rigorous proof
+   - [ ] All definitions are precise with explicit quantifiers
+   - [ ] Examples illustrate major results
+   - [ ] Counterexamples show necessity of hypotheses where applicable
+   - [ ] Notation is consistent throughout
+
+   FORMATTING CHECK:
+   - [ ] Theorem environments (\begin{theorem}...\end{theorem}) used properly
+   - [ ] Proof environments (\begin{proof}...\end{proof}) used for all proofs
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Labels and cross-references work correctly
+   - [ ] Bibliography entries are complete
+
+   STRUCTURE CHECK:
+   - [ ] Introduction previews main results clearly
+   - [ ] Preliminaries section makes the paper self-contained
+   - [ ] Results are ordered logically (lemmas before theorems that use them)
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

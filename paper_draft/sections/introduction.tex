@@ -1,0 +1,102 @@
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+Machine-learning systems in scientific and safety-critical domains are almost
+universally judged by a single scalar: accuracy, or one of its robust variants.
+This is convenient, but it is also mathematically incomplete. A model may answer a
+scientific question correctly and yet, under an adversarially crafted prompt,
+silently violate the ethical requirements we care about---fabricating citations,
+amplifying bias, leaking private information, or abandoning transparency---while
+its answer remains nominally right. An accuracy-only report certifies such a model
+as safe. The gap is not a matter of measurement noise: it is structural. A metric
+that depends on the model only through its correctness behavior \emph{cannot}, as a
+matter of logic, detect a failure that leaves correctness untouched.
+
+This motivates a precise mathematical question. Adversarial-robustness theory has
+produced rigorous, quantitative coefficients for the stability of
+\emph{correctness} under perturbation---the CLEVER score built from local Lipschitz
+constants \cite{Weng2018}, the certified radius of randomized smoothing
+\cite{Cohen2019}, and the exact robust-error decomposition of TRADES
+\cite{Zhang2019}. Alignment research has, in parallel, produced quantitative
+measures of \emph{ethical} stability, chiefly the attack success rate against
+standardized jailbreak benchmarks \cite{Chao2024,Zou2023}. These two literatures
+have not been fused: to our knowledge no prior work combines a
+certified-robustness-style correctness term with an alignment-stability term into a
+single coefficient with provable properties, and none connects a training-time
+ethical constraint to a lower bound on such a coefficient.
+
+\subsection{The question}
+We study the following informal hypothesis, which arises repeatedly in the
+empirical literature on aligned models: \emph{models trained with explicit ethical
+constraints are at least $0.15$ more robust than accuracy-only models under
+adversarial prompts, and this improvement is captured by a composite metric.} We
+ask whether this can be turned into a theorem. Concretely: is there a precisely
+defined coefficient $\RC_\lambda$ with provable analytic properties, together with
+explicit sufficient conditions under which a training-time ethical constraint
+\emph{guarantees} a separation
+\[
+  \Delta \;=\; \E[\RC_\lambda^{\eth}] - \E[\RC_\lambda^{\acc}] \;\ge\; 0.15\,?
+\]
+And is such a composite \emph{necessary}, or does accuracy alone already suffice?
+
+\subsection{Contributions}
+We answer both questions affirmatively. We define the composite ethical-robustness
+coefficient
+\[
+  \RC_\lambda(f,x,\varepsilon) \;=\; \lambda\,\rho_C(f,x,\varepsilon)
+    + (1-\lambda)\,\rho_A(f,x,\varepsilon), \qquad \lambda\in[0,1],
+\]
+where $\rho_C,\rho_A\in[0,1]$ are the worst-case preservation ratios of scientific
+correctness $C$ and ethical alignment $A$ over an adversarial perturbation set
+$B(x,\varepsilon)$, and prove:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+  \item \textbf{Well-posedness (\Cref{thm:wellposed}).} $\RC_\lambda$ is bounded in
+  $[0,1]$, non-increasing in $\varepsilon$, equal to $1$ at $\varepsilon=0$, and
+  recovers the single-term correctness and alignment metrics at $\lambda=1$ and
+  $\lambda=0$.
+  \item \textbf{Exact decomposition (\Cref{thm:decomp}).} The deficit of each
+  component obeys an exact additive identity $e_\rob^S=e_\nat^S+b^S$, the direct
+  analogue of the TRADES identity $R_\rob=R_\nat+R_\mathrm{bdy}$ \cite{Zhang2019},
+  yielding a normalized upper bound on $1-\E[\RC_\lambda]$.
+  \item \textbf{Constraint $\Rightarrow$ separation (\Cref{thm:main}, central).} A
+  constrained-Markov-decision-process alignment constraint on the ethical model,
+  together with a bounded correctness cost $\delta_C$, forces
+  $\Delta \ge (1-\lambda)\big[(1-d)-\bar a/a_{\min}\big]-\lambda\delta_C$, which
+  meets the $0.15$ target on an explicit region.
+  \item \textbf{Necessity of the composite (\Cref{thm:necessity}).} There exist two
+  models indistinguishable to every correctness-only metric yet separated by
+  $\RC_\lambda$; hence $\lambda<1$ is necessary to detect alignment collapse and
+  $\lambda>0$ to detect correctness collapse.
+  \item \textbf{Certified lower bounds (\Cref{thm:certified}).} $\RC_\lambda$
+  admits attack-independent Lipschitz and randomized-smoothing certified lower
+  bounds.
+  \item \textbf{Admissible-weight region (\Cref{thm:lambda}).} The set of weights
+  $\lambda$ achieving any target separation is characterized in closed form.
+\end{itemize}
+
+Although the correctness score $C$ is specialized in our motivating application to
+correctness on astrophysics questions, every theorem below is stated for arbitrary
+measurable scores $C,A\in[0,1]$ and is therefore domain-agnostic.
+
+\subsection{Techniques}
+The proofs are elementary but structured. Well-posedness and the decomposition
+follow from the nesting property of perturbation sets and linearity of
+expectation. The central separation theorem imports constrained-Markov-decision-
+process feasibility \cite{Achiam2017} as the mechanism that turns an ethical
+\emph{training constraint} into an alignment-robustness \emph{floor}, and combines
+it with a clean-competence floor via two elementary bounds on the preservation
+ratio. Necessity is proved by an explicit two-model hard-instance construction in
+the style of \cite{Tsipras2018}. The certified bounds instantiate the Lipschitz
+margin argument of \cite{Weng2018} and the Neyman--Pearson certificate of
+\cite{Cohen2019}. Every symbolic identity and inequality is verified with a
+computer-algebra system, and every quantitative claim is checked by a seeded
+Monte-Carlo study; \Cref{sec:discussion} reports these.
+
+\subsection{Organization}
+\Cref{sec:prelim} fixes notation, states the definitions, and recalls the
+prerequisite results. \Cref{sec:results} states and proves the six theorems, with
+worked examples. \Cref{sec:discussion} reports the computational verification and
+discusses implications, limitations, and open problems. \Cref{sec:conclusion}
+concludes.

@@ -1,0 +1,9 @@
+{
+  "seed": 42,
+  "python": "3.12.8",
+  "numpy": "2.5.0",
+  "scipy": "1.18.0",
+  "sympy": "1.14.0",
+  "n_inputs": 20000,
+  "bootstrap": 10000
+}

@@ -1,0 +1,131 @@
+\section{Preliminaries}
+\label{sec:prelim}
+
+\subsection{Notation}
+Inputs $x$ are drawn from a distribution $D$ on an input space $\mathcal{X}$, and
+$f$ denotes a fixed model. Expectations $\E[\cdot]$ are over $x\sim D$ unless
+otherwise indicated. We write $\Phi$ for the standard-normal cumulative
+distribution function and $\Phi^{-1}$ for its inverse. For $a\le b$ and a real
+number $t$ we write $\clip(t,a,b)=\min\{\max\{t,a\},b\}$.
+
+\subsection{Perturbation sets}
+An adversary is modeled by a family of \emph{perturbation sets}
+$\{B(x,\varepsilon)\}_{\varepsilon\ge0}$, one per input, indexed by a radius
+$\varepsilon\ge0$. We require two structural axioms.
+
+\begin{definition}[Admissible perturbation family]\label{def:pert}
+A family $\{B(x,\varepsilon)\}$ is \emph{admissible} if it satisfies
+\begin{enumerate}[label=\textup{(P\arabic*)},leftmargin=*]
+  \setcounter{enumi}{-1}
+  \item \label{P0} $B(x,0)=\{x\}$ for every $x$;
+  \item \label{P1} \emph{(nesting)} $\varepsilon_1\le\varepsilon_2$ implies
+  $B(x,\varepsilon_1)\subseteq B(x,\varepsilon_2)$.
+\end{enumerate}
+\end{definition}
+
+Both axioms hold for $\ell_p$ balls $B_p(x,\varepsilon)=\{x':\|x'-x\|_p\le
+\varepsilon\}$ and, in the prompt setting, for families of adversarial prompts
+measured by suffix length, edit distance, or token-substitution radius; this is the
+sense in which our results specialize to the discrete adversarial-prompt threat
+models of \cite{Zou2023,Chao2024}.
+
+\subsection{Scores and preservation ratios}
+The model is scored on two axes.
+
+\begin{definition}[Scores and worst-case scores]\label{def:scores}
+Let $C(f,x)\in[0,1]$ and $A(f,x)\in[0,1]$ be the clean \emph{scientific-correctness}
+and \emph{ethical-alignment} scores at $x$; the alignment score aggregates
+dimensions such as bias, reproducibility, transparency, integrity, and privacy, and
+is of the form $A=1-\mathrm{ASR}$ in the sense of \cite{Chao2024}. The
+\emph{worst-case scores} over $B(x,\varepsilon)$ are
+\[
+  \bar C(f,x,\varepsilon)=\min_{x'\in B(x,\varepsilon)}C(f,x'),
+  \qquad
+  \bar A(f,x,\varepsilon)=\min_{x'\in B(x,\varepsilon)}A(f,x').
+\]
+\end{definition}
+
+By \ref{P0} and \ref{P1}, $\bar C\le C$, $\bar A\le A$ pointwise, with equality at
+$\varepsilon=0$.
+
+\begin{definition}[Component robustness and composite coefficient]\label{def:rc}
+Fix a floor $\tau\in(0,1)$. The \emph{component robustness ratios} are
+\[
+  \rho_C(f,x,\varepsilon)=\clip\!\Big(\tfrac{\bar C(f,x,\varepsilon)}{\max(C(f,x),\tau)},0,1\Big),
+  \qquad
+  \rho_A(f,x,\varepsilon)=\clip\!\Big(\tfrac{\bar A(f,x,\varepsilon)}{\max(A(f,x),\tau)},0,1\Big).
+\]
+For a weight $\lambda\in[0,1]$, the \emph{composite ethical-robustness coefficient}
+is
+\[
+  \RC_\lambda(f,x,\varepsilon)=\lambda\,\rho_C(f,x,\varepsilon)+(1-\lambda)\,\rho_A(f,x,\varepsilon),
+\]
+and its population version is $\RC_\lambda(f,\varepsilon)=\E_x[\RC_\lambda(f,x,\varepsilon)]$.
+\end{definition}
+
+The floor $\tau$ guards against division by a vanishing clean score; it is active
+only on the event $\{C<\tau\}$ or $\{A<\tau\}$, and the outer $\clip$ ensures
+$\rho_C,\rho_A\in[0,1]$ regardless.
+
+\begin{definition}[Deficit quantities]\label{def:deficit}
+For a score $S\in\{C,A\}$ write the \emph{natural deficit}
+$e_\nat^S=\E[1-S]$, the \emph{robust deficit} $e_\rob^S=\E[1-\bar S]$, and the
+\emph{stability gap} $b^S=\E[S-\bar S]\ge0$.
+\end{definition}
+
+\subsection{Regularity and constraint hypotheses}
+Several results use clean-competence floors and Lipschitz regularity.
+
+\begin{definition}[Clean floors and Lipschitz constants]\label{def:reg}
+We say the model has \emph{clean floors} $c_{\min},a_{\min}\in(0,1]$ if
+$C(f,x)\ge c_{\min}$ and $A(f,x)\ge a_{\min}$ almost surely. We say $C(f,\cdot)$ is
+$L_C$-Lipschitz on $B(x,\varepsilon)$ if $|C(f,x')-C(f,x'')|\le L_C\,d(x',x'')$ for
+all $x',x''\in B(x,\varepsilon)$, and similarly $L_A$ for $A(f,\cdot)$, where
+$d(\cdot,\cdot)$ is the metric defining the perturbation set.
+\end{definition}
+
+The mechanism connecting ethical training to robustness is modeled after the
+constrained-Markov-decision-process (CMDP) feasibility that constrained policy
+optimization enforces \cite{Achiam2017}. Concretely, we distinguish two training
+regimes through their alignment behavior under the adversary.
+
+\begin{definition}[Constraint and collapse models]\label{def:ec}
+The \emph{ethically constrained} model $f_\eth$ satisfies the alignment constraint
+\begin{equation}\label{eq:EC}
+  \E[\,1-\bar A(f_\eth,\cdot,\varepsilon)\,]\le d \tag{EC}
+\end{equation}
+for a tolerance $d\in[0,1)$, equivalently $\E[\bar A_\eth]\ge 1-d$. The
+\emph{accuracy-only} model $f_\acc$ may collapse under the adversary:
+\begin{equation}\label{eq:CO}
+  \E[\,\bar A(f_\acc,\cdot,\varepsilon)\,]\le \bar a \tag{CO}
+\end{equation}
+for a collapse level $\bar a\in[0,1]$.
+\end{definition}
+
+Constraint \eqref{eq:EC} is exactly the CMDP feasibility $J_C(\pi_\eth)\le d$ of
+\cite[Def.~2, Prop.~2]{Achiam2017}, realizable in practice by the constitution of
+Constitutional AI \cite{Bai2022a} or the KL-regularized reward of RLHF
+\cite{Ouyang2022,Bai2022b}; the collapse \eqref{eq:CO} models the empirically
+documented jailbreak vulnerability of unconstrained models \cite{Zou2023}.
+
+\subsection{Prerequisite results}
+We use, without reproof, the following classical statements.
+
+\begin{theorem}[TRADES decomposition {\cite[Def.~2.1--2.3]{Zhang2019}}]\label{thm:trades}
+For a binary classifier the robust error decomposes exactly as
+$R_\rob(f)=R_\nat(f)+R_\mathrm{bdy}(f)$, a clean-error term plus a non-negative
+boundary term.
+\end{theorem}
+
+\begin{theorem}[Certified radius {\cite[Thm.~1]{Cohen2019}}]\label{thm:cohen}
+Let $g$ be the Gaussian smoothing of a base classifier with variance $\sigma^2$. If
+at $x$ the top and runner-up class probabilities under the smoothing noise satisfy
+$p_A\ge p_B$, then $g$ is constant on the $\ell_2$-ball of radius
+$R=\tfrac{\sigma}{2}\big(\Phi^{-1}(p_A)-\Phi^{-1}(p_B)\big)$ about $x$.
+\end{theorem}
+
+\begin{theorem}[Lipschitz margin bound {\cite[Cor.~2.1]{Weng2018}}]\label{thm:clever}
+If the class-margin function of a classifier is $L$-Lipschitz on $B_p(x,R)$, then
+the minimum distortion required to change its prediction at $x$ is at least the
+margin at $x$ divided by $L$.
+\end{theorem}
